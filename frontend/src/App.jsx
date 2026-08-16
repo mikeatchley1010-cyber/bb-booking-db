@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+ import { useState, useEffect } from 'react';
 import './App.css'; 
 
 function App() {
@@ -11,13 +11,13 @@ function App() {
   const today = new Date().toISOString().split('T')[0];
 
   const fetchBookings = () => {
-    fetch('[https://bb-booking-db-1.onrender.com](https://bb-booking-db-1.onrender.com)://bb-booking-db-1.onrender.com/api/bookings')
+    fetch('https://bb-booking-db-1.onrender.com/api/bookings')
       .then(response => response.json())
       .then(data => setBookings(data));
   };
 
   useEffect(() => {
-    fetch('[https://bb-booking-db-1.onrender.com](https://bb-booking-db-1.onrender.com)://bb-booking-db-1.onrender.com/api/test')
+    fetch('https://bb-booking-db-1.onrender.com/api/test')
       .then(response => response.json())
       .then(data => setBackendMessage(data.message));
     fetchBookings(); 
@@ -25,29 +25,29 @@ function App() {
 
   const handleBooking = () => {
     setStatusMessage('Processing...'); 
-    fetch('[https://bb-booking-db-1.onrender.com](https://bb-booking-db-1.onrender.com)://bb-booking-db-1.onrender.com/api/bookings', {
+    fetch('https://bb-booking-db-1.onrender.com/api/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ roomName: 'The Sunrise Room', checkIn, checkOut })
     })
-    .then(response => response.json())
-    .then(data => {
-      setStatusMessage(data.message); 
-      fetchBookings(); 
-    })
-    .catch(error => setStatusMessage('Error connecting to server!'));
+      .then(response => response.json())
+      .then(data => {
+        setStatusMessage(data.message); 
+        fetchBookings(); 
+      })
+      .catch(error => setStatusMessage('Error connecting to server!'));
   };
 
   // NEW: Function to delete a booking
   const cancelBooking = (id) => {
     setStatusMessage('Canceling...');
-    fetch(`[https://bb-booking-db-1.onrender.com](https://bb-booking-db-1.onrender.com)://bb-booking-db-1.onrender.com/api/bookings/${id}`, { method: 'DELETE' })
-    .then(response => response.json())
-    .then(data => {
-      setStatusMessage(data.message);
-      fetchBookings(); // Automatically refresh the list!
-    })
-    .catch(error => setStatusMessage('Error canceling booking!'));
+    fetch(`https://bb-booking-db-1.onrender.com/api/bookings/${id}`, { method: 'DELETE' })
+      .then(response => response.json())
+      .then(data => {
+        setStatusMessage(data.message);
+        fetchBookings(); // Automatically refresh the list!
+      })
+      .catch(error => setStatusMessage('Error canceling booking!'));
   };
 
   const formatDate = (dateString) => {
@@ -55,8 +55,12 @@ function App() {
   };
 
   return (
-  <div>
-      <img src="[https://images.unsplash.com/photo-1590490360182-c33d59735688?q=80&w=600&auto=format&fit=crop](https://images.unsplash.com/photo-1590490360182-c33d59735688?q=80&w=600&auto=format&fit=crop)" alt="Cozy B&B Room" className="cover-photo" />
+    <div>
+      <img 
+        src="https://images.unsplash.com/photo-1590490360182-c33d59735688?q=80&w=600&auto=format&fit=crop" 
+        alt="Cozy B&B Room" 
+        className="cover-photo" 
+      />
       <h1>Cleghorn Canyon Bed and Breakfast</h1>
       <p>Server Status: {backendMessage}</p>
       <h2>The Sunrise Room - $120/night</h2>
@@ -78,7 +82,7 @@ function App() {
         ))}
       </ul>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
