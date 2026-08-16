@@ -1,0 +1,95 @@
+/* The Background and Font */
+body {
+  background-color: #f4f1ea; /* Warm, relaxing off-white */
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  color: #333;
+  margin: 0;
+  padding: 40px 20px;
+}
+
+/* The Main Floating Card */
+div {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+
+/* Elegant Headers */
+h1 {
+  font-family: 'Georgia', serif; 
+  color: #2c3e50;
+  margin-top: 0;
+  font-size: 32px;      /* Keeps the text from getting too massive */
+  line-height: 1.3;     /* Gives the words room to breathe */
+  word-break: normal;   /* Stops letters from breaking vertically */
+}
+}
+h2 {
+  color: #7f8c8d;
+  font-weight: normal;
+  margin-bottom: 30px;
+}
+
+/* The Booking Button */
+button {
+  background-color: #4a7c59; /* Sage green */
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-top: 20px;
+  margin-bottom: 30px;
+}
+
+button:hover {
+  background-color: #3b6347; /* Darker green when hovering */
+}
+
+/* The Reservation List */
+h3 {
+  font-family: 'Georgia', serif; 
+  border-top: 1px solid #eee;
+  padding-top: 30px;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  background: #fcfcfc;
+  border: 1px solid #eaeaea;
+  margin-bottom: 12px;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: left;
+}/* Style for the Cancel Button */
+.cancel-btn {
+  background-color: #d9534f;
+  padding: 6px 12px;
+  font-size: 13px;
+  margin-left: 15px;
+  width: auto;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.cancel-btn:hover {
+  background-color: #c9302c;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
