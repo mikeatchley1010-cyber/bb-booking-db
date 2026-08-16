@@ -11,13 +11,13 @@ function App() {
   const today = new Date().toISOString().split('T')[0];
 
   const fetchBookings = () => {
-    fetch('http://https://bb-booking-db-1.onrender.com/api/bookings')
+    fetch('[https://bb-booking-db-1.onrender.com](https://bb-booking-db-1.onrender.com)://bb-booking-db-1.onrender.com/api/bookings')
       .then(response => response.json())
       .then(data => setBookings(data));
   };
 
   useEffect(() => {
-    fetch('http://https://bb-booking-db-1.onrender.com/api/test')
+    fetch('[https://bb-booking-db-1.onrender.com](https://bb-booking-db-1.onrender.com)://bb-booking-db-1.onrender.com/api/test')
       .then(response => response.json())
       .then(data => setBackendMessage(data.message));
     fetchBookings(); 
@@ -25,7 +25,7 @@ function App() {
 
   const handleBooking = () => {
     setStatusMessage('Processing...'); 
-    fetch('http://https://bb-booking-db-1.onrender.com/api/bookings', {
+    fetch('[https://bb-booking-db-1.onrender.com](https://bb-booking-db-1.onrender.com)://bb-booking-db-1.onrender.com/api/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ roomName: 'The Sunrise Room', checkIn, checkOut })
@@ -41,7 +41,7 @@ function App() {
   // NEW: Function to delete a booking
   const cancelBooking = (id) => {
     setStatusMessage('Canceling...');
-    fetch(`http://https://bb-booking-db-1.onrender.com/api/bookings/${id}`, { method: 'DELETE' })
+    fetch(`[https://bb-booking-db-1.onrender.com](https://bb-booking-db-1.onrender.com)://bb-booking-db-1.onrender.com/api/bookings/${id}`, { method: 'DELETE' })
     .then(response => response.json())
     .then(data => {
       setStatusMessage(data.message);
