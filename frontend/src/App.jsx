@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import BookingPage from './BookingPage';
 import './App.css';
 
-// Temporary placeholder pages! We will build these out later.
+// Notice the  tags wrapping the text!
 const Home = () => Welcome to Cleghorn Canyon;
 const Amenities = () => Our Amenities;
 const Attractions = () => Local Attractions;
@@ -12,7 +12,6 @@ function App() {
   return (
     
       
-        {/* Your new Navigation Bar */}
         
           Home
           Rooms & Packages
@@ -21,7 +20,6 @@ function App() {
           Admin
         
 
-        {/* The routing engine that swaps the pages */}
         
           } />
           } />
