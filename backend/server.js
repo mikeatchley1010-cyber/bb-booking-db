@@ -1,41 +1,60 @@
-require('dotenv').config(); // NEW: Unlocks the secret vault!
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 
 const app = express();
-// NEW: Cloud servers pick their own ports, so we let them!
 const PORT = process.env.PORT || 5000; 
 
 app.use(cors());
 app.use(express.json());
 
-// NEW: Connects to Cloud PostgreSQL using your hidden vault
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false // Required by cloud databases
+    rejectUnauthorized: false 
   }
 });
 
-// 1. The receiving door (Saves new bookings)
+// 1. The receiving door (Saves new bookings & explodes packages!)
 app.post('/api/bookings', async (req, res) => {
   try {
     const { roomName, checkIn, checkOut } = req.body;
-    const overlapCheck = await pool.query(
-      `SELECT * FROM reservations 
-       WHERE room_name = $1 AND check_in < $3::DATE AND check_out > $2::DATE`,
-      [roomName, checkIn, checkOut]
-    );
 
-    if (overlapCheck.rows.length > 0) {
-      return res.status(400).json({ message: "Sorry! Those dates are already booked." });
+    // STEP 1: Translate the dropdown choice into physical rooms
+    let roomsToBook = [];
+    if (roomName === 'The Couples Package (Buffalo Ridge + Bighorn Lookout)') {
+      roomsToBook = ['Buffalo Ridge', 'Bighorn Lookout'];
+    } else if (roomName === 'The Full House Package (All 3 Rooms)') {
+      roomsToBook = ['Buffalo Ridge', 'Bighorn Lookout', 'Deer Run'];
+    } else {
+      // If it's not a package, just book the single room they selected
+      roomsToBook = [roomName]; 
     }
 
-    await pool.query(
-      "INSERT INTO reservations (room_name, check_in, check_out) VALUES ($1, $2, $3)",
-      [roomName, checkIn, checkOut]
-    );
+    // STEP 2: Check the database to make sure EVERY room is available
+    for (const room of roomsToBook) {
+      const overlapCheck = await pool.query(
+        `SELECT * FROM reservations 
+         WHERE room_name = $1 AND check_in < $3::DATE AND check_out > $2::DATE`,
+        [room, checkIn, checkOut]
+      );
+
+      if (overlapCheck.rows.length > 0) {
+        return res.status(400).json({ 
+          message: `Sorry! ${room} is already booked for those dates.` 
+        });
+      }
+    }
+
+    // STEP 3: If we get here, all rooms are free! Save them to the database.
+    for (const room of roomsToBook) {
+      await pool.query(
+        "INSERT INTO reservations (room_name, check_in, check_out) VALUES ($1, $2, $3)",
+        [room, checkIn, checkOut]
+      );
+    }
+
     res.json({ message: "Booking saved successfully!" });
   } catch (err) {
     res.status(500).json({ message: "Failed to save booking" });
