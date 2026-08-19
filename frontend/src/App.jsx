@@ -2,33 +2,32 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import BookingPage from './BookingPage';
 import './App.css';
 
-// Notice the  tags wrapping the text!
-const Home = () => Welcome to Cleghorn Canyon;
-const Amenities = () => Our Amenities;
-const Attractions = () => Local Attractions;
-const Admin = () => Secure Admin Dashboard;
+const Home = () => <h2>Welcome to Cleghorn Canyon</h2>;
+const Amenities = () => <h2>Our Amenities</h2>;
+const Attractions = () => <h2>Local Attractions</h2>;
+const Admin = () => <h2>Secure Admin Dashboard</h2>;
 
 function App() {
   return (
-    
-      
-        
-          Home
-          Rooms & Packages
-          Amenities
-          Attractions
-          Admin
-        
+    <Router>
+      <div>
+        <nav className="nav-bar">
+          <Link to="/">Home</Link>
+          <Link to="/rooms">Rooms and Packages</Link>
+          <Link to="/amenities">Amenities</Link>
+          <Link to="/attractions">Attractions</Link>
+          <Link to="/admin">Admin</Link>
+        </nav>
 
-        
-          } />
-          } />
-          } />
-          } />
-          } />
-        
-      
-    
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/rooms" element={<BookingPage />} />
+          <Route path="/amenities" element={<Amenities />} />
+          <Route path="/attractions" element={<Attractions />} />
+          <Route path="/admin" element={<Admin />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 

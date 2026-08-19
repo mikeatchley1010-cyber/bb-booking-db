@@ -53,49 +53,15 @@ function BookingPage() {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', { timeZone: 'UTC' });
-  };
-
-  return (
-    
+  };  
+    return (
+    <div className="booking-container">
+      <h1>Cleghorn Canyon Bed and Breakfast</h1>
+      <p>Server Status: {backendMessage}</p>
       
-      Cleghorn Canyon Bed and Breakfast
-      Server Status: {backendMessage}
+      {/* Your form, dropdowns, and other booking layout goes here! */}
       
-      Book Your Stay
-      
-      
-        Select Room or Package: 
-         setSelectedRoom(e.target.value)}>
-          
-            Buffalo Ridge
-            Bighorn Lookout
-            Deer Run
-          
-          
-            The Couples Package (Buffalo Ridge + Bighorn Lookout)
-            The Full House Package (All 3 Rooms)
-          
-        
-      
-      
-      
-      Check-in:  setCheckIn(e.target.value)} />
-      Check-out:  setCheckOut(e.target.value)} />
-      
-      Book Now
-      
-      {statusMessage}
-      
-      Current Reservations:
-      
-        {bookings.map((booking) => (
-          
-            {booking.room_name}: {formatDate(booking.check_in)} to {formatDate(booking.check_out)}
-             cancelBooking(booking.id)}>Cancel
-          
-        ))}
-      
-    
+    </div>
   );
 }
 
