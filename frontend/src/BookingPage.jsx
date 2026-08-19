@@ -63,8 +63,8 @@ function BookingPage() {
         <h2>Book Your Stay</h2>
         <select value={selectedRoom} onChange={(e) => setSelectedRoom(e.target.value)}>
           <option value="Buffalo Ridge">Buffalo Ridge</option>
-          <option value="Canyon Suite">Canyon Suite</option>
-          <option value="Ponderosa Room">Ponderosa Room</option>
+          <option value="BigHorn Lookout">Canyon Suite</option>
+          <option value="Deer Run">Ponderosa Room</option>
         </select>
         <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
         <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
