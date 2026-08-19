@@ -61,11 +61,14 @@ function BookingPage() {
       
       <div className="booking-form-section" style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px' }}>
         <h2>Book Your Stay</h2>
-        <select value={selectedRoom} onChange={(e) => setSelectedRoom(e.target.value)}>
-          <option value="Buffalo Ridge">Buffalo Ridge</option>
-          <option value="BigHorn Lookout">Canyon Suite</option>
-          <option value="Deer Run">Ponderosa Room</option>
-        </select>
+      <select 
+  value={selectedRoom} 
+  onChange={(e) => setSelectedRoom(e.target.value)}
+>
+  <option value="Buffalo Ridge">Buffalo Ridge</option>
+  <option value="BigHorn Lookout">BigHorn Lookout</option>
+  <option value="Deer Run">Deer Run</option>
+</select>
         <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
         <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
         <button onClick={handleBooking}>Confirm Booking</button>
