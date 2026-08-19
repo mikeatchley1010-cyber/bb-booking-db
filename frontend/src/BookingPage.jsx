@@ -5,7 +5,6 @@ function BookingPage() {
   const [backendMessage, setBackendMessage] = useState('Waiting...');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
-  // UPDATED: Now defaults to Buffalo Ridge
   const [selectedRoom, setSelectedRoom] = useState('Buffalo Ridge'); 
   const [bookings, setBookings] = useState([]); 
   const [statusMessage, setStatusMessage] = useState(''); 
@@ -37,7 +36,7 @@ function BookingPage() {
         setStatusMessage(data.message); 
         fetchBookings(); 
       })
-      .catch(error => setStatusMessage('Error connecting to server!'));
+      .catch(() => setStatusMessage('Error connecting to server!'));
   };
 
   const cancelBooking = (id) => {
@@ -48,19 +47,40 @@ function BookingPage() {
         setStatusMessage(data.message);
         fetchBookings(); 
       })
-      .catch(error => setStatusMessage('Error canceling booking!'));
+      .catch(() => setStatusMessage('Error canceling booking!'));
   };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', { timeZone: 'UTC' });
-  };  
-    return (
-    <div className="booking-container">
+  };
+
+  return (
+    <div className="booking-container" style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
       <h1>Cleghorn Canyon Bed and Breakfast</h1>
       <p>Server Status: {backendMessage}</p>
       
-      {/* Your form, dropdowns, and other booking layout goes here! */}
-      
+      <div className="booking-form-section" style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px' }}>
+        <h2>Book Your Stay</h2>
+        <select value={selectedRoom} onChange={(e) => setSelectedRoom(e.target.value)}>
+          <option value="Buffalo Ridge">Buffalo Ridge</option>
+          <option value="Canyon Suite">Canyon Suite</option>
+          <option value="Ponderosa Room">Ponderosa Room</option>
+        </select>
+        <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
+        <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
+        <button onClick={handleBooking}>Confirm Booking</button>
+        {statusMessage && <p>{statusMessage}</p>}
+      </div>
+
+      <div className="reservations-section">
+        <h2>Current Reservations</h2>
+        {bookings.map((b) => (
+          <div key={b.id}>
+            <strong>{b.room_name}</strong>: {formatDate(b.check_in)} to {formatDate(b.check_out)}
+            <button onClick={() => cancelBooking(b.id)}>Cancel</button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
