@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import BookingPage from './BookingPage';
+import AdminPage from './AdminPage'; // <-- 1. We imported your new file here!
 import './App.css';
 
 const Home = () => <h2>Welcome to Cleghorn Canyon</h2>;
 const Amenities = () => <h2>Our Amenities</h2>;
 const Attractions = () => <h2>Local Attractions</h2>;
-const Admin = () => <h2>Secure Admin Dashboard</h2>;
+// 2. We removed the placeholder Admin component that was here.
 
 function App() {
   return (
@@ -24,7 +25,8 @@ function App() {
           <Route path="/rooms" element={<BookingPage />} />
           <Route path="/amenities" element={<Amenities />} />
           <Route path="/attractions" element={<Attractions />} />
-          <Route path="/admin" element={<Admin />} />
+          {/* 3. We updated the element below to use your new AdminPage! */}
+          <Route path="/admin" element={<AdminPage />} /> 
         </Routes>
       </div>
     </Router>
