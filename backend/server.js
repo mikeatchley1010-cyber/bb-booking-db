@@ -21,15 +21,15 @@ app.post('/api/bookings', async (req, res) => {
   try {
     const { roomName, checkIn, checkOut } = req.body;
 
-    // STEP 1: Translate the dropdown choice into physical rooms
+// STEP 1: Translate the dropdown choice into physical rooms
     let roomsToBook = [];
-    if (roomName === 'The Couples Package (Buffalo Ridge + Bighorn Lookout)') {
-      roomsToBook = ['Buffalo Ridge', 'Bighorn Lookout'];
+    if (roomName === 'Family Package (BigHorn Lookout & Deer Run)') {
+      roomsToBook = ['BigHorn Lookout', 'Deer Run'];
     } else if (roomName === 'The Full House Package (All 3 Rooms)') {
-      roomsToBook = ['Buffalo Ridge', 'Bighorn Lookout', 'Deer Run'];
+      roomsToBook = ['Buffalo Ridge', 'BigHorn Lookout', 'Deer Run'];
     } else {
       // If it's not a package, just book the single room they selected
-      roomsToBook = [roomName]; 
+      roomsToBook = [roomName];     
     }
 
     // STEP 2: Check the database to make sure EVERY room is available
