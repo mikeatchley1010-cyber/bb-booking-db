@@ -15,6 +15,8 @@ const pool = new Pool({
     rejectUnauthorized: false 
   }
 });
+
+// 0. The Database Upgrade Route (Run this once after deployment!)
 app.get('/api/setup-db', async (req, res) => {
   try {
     await pool.query(`
@@ -28,10 +30,10 @@ app.get('/api/setup-db', async (req, res) => {
     res.send("Error upgrading database: " + err.message);
   }
 });
-// 1. The receiving door (Saves new bookings & explodes packages!)
+
+// 1. The receiving door (Saves new bookings & guest info)
 app.post('/api/bookings', async (req, res) => {
   try {
-    // We are now grabbing guest details from the frontend request!
     const { guestName, guestEmail, guestPhone, roomName, checkIn, checkOut } = req.body;
 
     let roomsToBook = [];
@@ -43,6 +45,7 @@ app.post('/api/bookings', async (req, res) => {
       roomsToBook = [roomName]; 
     }
 
+    // STEP 2: Check for overlaps
     for (const room of roomsToBook) {
       const overlapCheck = await pool.query(
         `SELECT * FROM reservations 
@@ -51,22 +54,19 @@ app.post('/api/bookings', async (req, res) => {
       );
 
       if (overlapCheck.rows.length > 0) {
-        return res.status(400).json({ message: `Sorry! ${room} is already booked for those dates.` });
+        return res.status(400).json({ 
+          message: `Sorry! ${room} is already booked for those dates.` 
+        });
       }
     }
 
-    // STEP 3: Now we save the guest_name, guest_email, and guest_phone into the database
+    // STEP 3: Save booking with guest details
     for (const room of roomsToBook) {
       await pool.query(
         "INSERT INTO reservations (guest_name, guest_email, guest_phone, room_name, check_in, check_out) VALUES ($1, $2, $3, $4, $5, $6)",
         [guestName, guestEmail, guestPhone, room, checkIn, checkOut]
       );
     }
-
-    res.json({ message: "Booking saved successfully!" });
-  } catch (err) {
-    res.status(500).json({ message: "Failed to save booking" });
-  }
 
     res.json({ message: "Booking saved successfully!" });
   } catch (err) {
