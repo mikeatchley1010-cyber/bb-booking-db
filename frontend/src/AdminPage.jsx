@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 
 function AdminPage() {
+  // --- Security State ---
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  // --- Dashboard State ---
   const [bookings, setBookings] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
   const [selectedRoomFilter, setSelectedRoomFilter] = useState('All');
-  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' for soonest first
+  const [sortOrder, setSortOrder] = useState('asc'); 
 
   const fetchBookings = () => {
     fetch('https://bb-booking-db-1.onrender.com/api/bookings')
@@ -12,9 +18,24 @@ function AdminPage() {
       .then(data => setBookings(data));
   };
 
+  // Only fetch bookings IF the user is logged in
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    if (isAuthenticated) {
+      fetchBookings();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    // Change your password right here!
+    if (passwordInput === 'Cleghorn2026') {
+      setIsAuthenticated(true);
+      setLoginError('');
+    } else {
+      setLoginError('Incorrect password. Please try again.');
+      setPasswordInput('');
+    }
+  };
 
   const cancelBooking = (id) => {
     setStatusMessage('Canceling...');
@@ -31,27 +52,58 @@ function AdminPage() {
     return new Date(dateString).toLocaleDateString('en-US', { timeZone: 'UTC' });
   };
 
-  // 1. Filter bookings by selected room
   const filteredBookings = bookings.filter(b => {
     if (selectedRoomFilter === 'All') return true;
     return b.room_name === selectedRoomFilter;
   });
 
-  // 2. Sort bookings by check-in date
   const sortedBookings = filteredBookings.sort((a, b) => {
     const dateA = new Date(a.check_in);
     const dateB = new Date(b.check_in);
     return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
   });
 
+  // --- The Login Screen UI ---
+  if (!isAuthenticated) {
+    return (
+      <div style={{ padding: '50px 20px', maxWidth: '400px', margin: '0 auto', textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
+        <h2>Admin Access Required</h2>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
+          <input 
+            type="password" 
+            placeholder="Enter Password" 
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+            style={{ padding: '10px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ccc' }}
+          />
+          <button 
+            type="submit"
+            style={{ background: '#333', color: 'white', border: 'none', padding: '10px', fontSize: '16px', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            Unlock Dashboard
+          </button>
+        </form>
+        {loginError && <p style={{ color: '#dc3545', marginTop: '15px', fontWeight: 'bold' }}>{loginError}</p>}
+      </div>
+    );
+  }
+
+  // --- The Main Admin Dashboard UI (Only shows if unlocked) ---
   return (
     <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Admin Dashboard</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>Admin Dashboard</h1>
+        <button 
+          onClick={() => setIsAuthenticated(false)}
+          style={{ background: 'transparent', border: '1px solid #333', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
+        >
+          Log Out
+        </button>
+      </div>
       <p>Filter, sort, and manage your property's reservations.</p>
       
       {statusMessage && <p style={{ fontWeight: 'bold', color: '#007bff' }}>{statusMessage}</p>}
 
-      {/* Controls Bar: Filtering & Sorting */}
       <div style={{ display: 'flex', gap: '20px', background: '#f4f4f4', padding: '15px', borderRadius: '6px', marginBottom: '20px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>Filter by Room:</label>
