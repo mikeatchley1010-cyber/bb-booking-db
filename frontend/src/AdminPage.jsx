@@ -135,6 +135,8 @@ function AdminPage() {
       <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
         <thead>
           <tr style={{ background: '#eee', textAlign: 'left' }}>
+            <th style={{ padding: '12px', border: '1px solid #ddd' }}>Guest</th>
+            <th style={{ padding: '12px', border: '1px solid #ddd' }}>Contact</th>
             <th style={{ padding: '12px', border: '1px solid #ddd' }}>Room</th>
             <th style={{ padding: '12px', border: '1px solid #ddd' }}>Check-In</th>
             <th style={{ padding: '12px', border: '1px solid #ddd' }}>Check-Out</th>
@@ -144,13 +146,15 @@ function AdminPage() {
         <tbody>
           {sortedBookings.length === 0 ? (
             <tr>
-              <td colSpan="4" style={{ padding: '15px', textAlign: 'center', color: '#666' }}>
+              <td colSpan="6" style={{ padding: '15px', textAlign: 'center', color: '#666' }}>
                 No reservations match your filter criteria.
               </td>
             </tr>
           ) : (
             sortedBookings.map((b) => (
               <tr key={b.id}>
+                <td style={{ padding: '12px', border: '1px solid #ddd' }}><strong>{b.guest_name}</strong></td>
+                <td style={{ padding: '12px', border: '1px solid #ddd' }}>{b.guest_email}<br/>{b.guest_phone}</td>
                 <td style={{ padding: '12px', border: '1px solid #ddd' }}><strong>{b.room_name}</strong></td>
                 <td style={{ padding: '12px', border: '1px solid #ddd' }}>{formatDate(b.check_in)}</td>
                 <td style={{ padding: '12px', border: '1px solid #ddd' }}>{formatDate(b.check_out)}</td>
@@ -159,7 +163,7 @@ function AdminPage() {
                     onClick={() => cancelBooking(b.id)}
                     style={{ background: '#dc3545', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
                   >
-                    Cancel Booking
+                    Cancel
                   </button>
                 </td>
               </tr>

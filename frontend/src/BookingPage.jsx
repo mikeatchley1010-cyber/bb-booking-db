@@ -8,8 +8,9 @@ function BookingPage() {
   const [selectedRoom, setSelectedRoom] = useState('Buffalo Ridge'); 
   const [bookings, setBookings] = useState([]); 
   const [statusMessage, setStatusMessage] = useState(''); 
-
-  const today = new Date().toISOString().split('T')[0];
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
 
   const fetchBookings = () => {
     fetch('https://bb-booking-db-1.onrender.com/api/bookings')
@@ -29,14 +30,21 @@ function BookingPage() {
     fetch('https://bb-booking-db-1.onrender.com/api/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roomName: selectedRoom, checkIn, checkOut }) 
-    })
-      .then(response => response.json())
-      .then(data => {
-        setStatusMessage(data.message); 
-        fetchBookings(); 
+      body: JSON.stringify({ 
+        guestName, 
+        guestEmail, 
+        guestPhone, 
+        roomName: selectedRoom, 
+        checkIn, 
+        checkOut 
       })
-      .catch(() => setStatusMessage('Error connecting to server!'));
+    }) // <--- This closing bracket and parenthesis was missing!
+    .then(response => response.json())
+    .then(data => {
+      setStatusMessage(data.message); 
+      fetchBookings(); 
+    })
+    .catch(() => setStatusMessage('Error connecting to server!'));
   };
 
   const cancelBooking = (id) => {
@@ -61,20 +69,22 @@ function BookingPage() {
       
       <div className="booking-form-section" style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px' }}>
         <h2>Book Your Stay</h2>
-  <select value={selectedRoom} onChange={(e) => setSelectedRoom(e.target.value)}>
-  <option value="Buffalo Ridge">Buffalo Ridge</option>
-  <option value="BigHorn Lookout">BigHorn Lookout</option>
-  <option value="Deer Run">Deer Run</option>
-  
-  {/* The newly updated Family Package */}
-  <option value="Family Package (BigHorn Lookout & Deer Run)">
-    Family Package (BigHorn Lookout & Deer Run)
-  </option>
-  
-  <option value="The Full House Package (All 3 Rooms)">
-    The Full House Package (All 3 Rooms)
-  </option>
-</select>
+        <input type="text" placeholder="Full Name" value={guestName} onChange={(e) => setGuestName(e.target.value)} />
+        <input type="email" placeholder="Email Address" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} />
+        <input type="tel" placeholder="Phone Number" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} />
+        
+        <select value={selectedRoom} onChange={(e) => setSelectedRoom(e.target.value)}>
+          <option value="Buffalo Ridge">Buffalo Ridge</option>
+          <option value="BigHorn Lookout">BigHorn Lookout</option>
+          <option value="Deer Run">Deer Run</option>
+          <option value="Family Package (BigHorn Lookout & Deer Run)">
+            Family Package (BigHorn Lookout & Deer Run)
+          </option>
+          <option value="The Full House Package (All 3 Rooms)">
+            The Full House Package (All 3 Rooms)
+          </option>
+        </select>
+        
         <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
         <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
         <button onClick={handleBooking}>Confirm Booking</button>

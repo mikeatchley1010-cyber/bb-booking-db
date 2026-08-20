@@ -15,24 +15,34 @@ const pool = new Pool({
     rejectUnauthorized: false 
   }
 });
-
+app.get('/api/setup-db', async (req, res) => {
+  try {
+    await pool.query(`
+      ALTER TABLE reservations 
+      ADD COLUMN IF NOT EXISTS guest_name VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS guest_email VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS guest_phone VARCHAR(50);
+    `);
+    res.send("Database upgraded successfully! You can close this tab.");
+  } catch (err) {
+    res.send("Error upgrading database: " + err.message);
+  }
+});
 // 1. The receiving door (Saves new bookings & explodes packages!)
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { roomName, checkIn, checkOut } = req.body;
+    // We are now grabbing guest details from the frontend request!
+    const { guestName, guestEmail, guestPhone, roomName, checkIn, checkOut } = req.body;
 
-// STEP 1: Translate the dropdown choice into physical rooms
     let roomsToBook = [];
     if (roomName === 'Family Package (BigHorn Lookout & Deer Run)') {
       roomsToBook = ['BigHorn Lookout', 'Deer Run'];
     } else if (roomName === 'The Full House Package (All 3 Rooms)') {
       roomsToBook = ['Buffalo Ridge', 'BigHorn Lookout', 'Deer Run'];
     } else {
-      // If it's not a package, just book the single room they selected
-      roomsToBook = [roomName];     
+      roomsToBook = [roomName]; 
     }
 
-    // STEP 2: Check the database to make sure EVERY room is available
     for (const room of roomsToBook) {
       const overlapCheck = await pool.query(
         `SELECT * FROM reservations 
@@ -41,19 +51,22 @@ app.post('/api/bookings', async (req, res) => {
       );
 
       if (overlapCheck.rows.length > 0) {
-        return res.status(400).json({ 
-          message: `Sorry! ${room} is already booked for those dates.` 
-        });
+        return res.status(400).json({ message: `Sorry! ${room} is already booked for those dates.` });
       }
     }
 
-    // STEP 3: If we get here, all rooms are free! Save them to the database.
+    // STEP 3: Now we save the guest_name, guest_email, and guest_phone into the database
     for (const room of roomsToBook) {
       await pool.query(
-        "INSERT INTO reservations (room_name, check_in, check_out) VALUES ($1, $2, $3)",
-        [room, checkIn, checkOut]
+        "INSERT INTO reservations (guest_name, guest_email, guest_phone, room_name, check_in, check_out) VALUES ($1, $2, $3, $4, $5, $6)",
+        [guestName, guestEmail, guestPhone, room, checkIn, checkOut]
       );
     }
+
+    res.json({ message: "Booking saved successfully!" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to save booking" });
+  }
 
     res.json({ message: "Booking saved successfully!" });
   } catch (err) {
