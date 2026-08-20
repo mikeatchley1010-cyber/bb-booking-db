@@ -23,7 +23,9 @@ app.get('/api/setup-db', async (req, res) => {
       ALTER TABLE reservations 
       ADD COLUMN IF NOT EXISTS guest_name VARCHAR(255),
       ADD COLUMN IF NOT EXISTS guest_email VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS guest_phone VARCHAR(50);
+      ADD COLUMN IF NOT EXISTS guest_phone VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS guest_count VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS guest_ages VARCHAR(255);
     `);
     res.send("Database upgraded successfully! You can close this tab.");
   } catch (err) {
@@ -34,8 +36,18 @@ app.get('/api/setup-db', async (req, res) => {
 // 1. The receiving door (Saves new bookings & guest info)
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { guestName, guestEmail, guestPhone, roomName, checkIn, checkOut } = req.body;
+    const { 
+      guestName, 
+      guestEmail, 
+      guestPhone, 
+      guestCount, 
+      guestAges, 
+      roomName, 
+      checkIn, 
+      checkOut 
+    } = req.body;
 
+    // STEP 1: Translate package choices into physical rooms
     let roomsToBook = [];
     if (roomName === 'Family Package (BigHorn Lookout & Deer Run)') {
       roomsToBook = ['BigHorn Lookout', 'Deer Run'];
@@ -45,7 +57,7 @@ app.post('/api/bookings', async (req, res) => {
       roomsToBook = [roomName]; 
     }
 
-    // STEP 2: Check for overlaps
+    // STEP 2: Check for date overlaps in the database
     for (const room of roomsToBook) {
       const overlapCheck = await pool.query(
         `SELECT * FROM reservations 
@@ -60,11 +72,13 @@ app.post('/api/bookings', async (req, res) => {
       }
     }
 
-    // STEP 3: Save booking with guest details
+    // STEP 3: Save booking with complete guest & party details
     for (const room of roomsToBook) {
       await pool.query(
-        "INSERT INTO reservations (guest_name, guest_email, guest_phone, room_name, check_in, check_out) VALUES ($1, $2, $3, $4, $5, $6)",
-        [guestName, guestEmail, guestPhone, room, checkIn, checkOut]
+        `INSERT INTO reservations 
+         (guest_name, guest_email, guest_phone, guest_count, guest_ages, room_name, check_in, check_out) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [guestName, guestEmail, guestPhone, guestCount, guestAges, room, checkIn, checkOut]
       );
     }
 

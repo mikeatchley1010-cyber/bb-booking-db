@@ -18,7 +18,6 @@ function AdminPage() {
       .then(data => setBookings(data));
   };
 
-  // Only fetch bookings IF the user is logged in
   useEffect(() => {
     if (isAuthenticated) {
       fetchBookings();
@@ -27,7 +26,6 @@ function AdminPage() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // Change your password right here!
     if (passwordInput === 'Cleghorn2026') {
       setIsAuthenticated(true);
       setLoginError('');
@@ -63,7 +61,7 @@ function AdminPage() {
     return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
   });
 
-  // --- The Login Screen UI ---
+  // --- Login Screen ---
   if (!isAuthenticated) {
     return (
       <div style={{ padding: '50px 20px', maxWidth: '400px', margin: '0 auto', textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
@@ -88,9 +86,9 @@ function AdminPage() {
     );
   }
 
-  // --- The Main Admin Dashboard UI (Only shows if unlocked) ---
+  // --- Main Dashboard ---
   return (
-    <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Admin Dashboard</h1>
         <button 
@@ -100,7 +98,7 @@ function AdminPage() {
           Log Out
         </button>
       </div>
-      <p>Filter, sort, and manage your property's reservations.</p>
+      <p>Manage and review your incoming reservations.</p>
       
       {statusMessage && <p style={{ fontWeight: 'bold', color: '#007bff' }}>{statusMessage}</p>}
 
@@ -137,6 +135,7 @@ function AdminPage() {
           <tr style={{ background: '#eee', textAlign: 'left' }}>
             <th style={{ padding: '12px', border: '1px solid #ddd' }}>Guest</th>
             <th style={{ padding: '12px', border: '1px solid #ddd' }}>Contact</th>
+            <th style={{ padding: '12px', border: '1px solid #ddd' }}>Party / Ages</th>
             <th style={{ padding: '12px', border: '1px solid #ddd' }}>Room</th>
             <th style={{ padding: '12px', border: '1px solid #ddd' }}>Check-In</th>
             <th style={{ padding: '12px', border: '1px solid #ddd' }}>Check-Out</th>
@@ -146,15 +145,23 @@ function AdminPage() {
         <tbody>
           {sortedBookings.length === 0 ? (
             <tr>
-              <td colSpan="6" style={{ padding: '15px', textAlign: 'center', color: '#666' }}>
+              <td colSpan="7" style={{ padding: '15px', textAlign: 'center', color: '#666' }}>
                 No reservations match your filter criteria.
               </td>
             </tr>
           ) : (
             sortedBookings.map((b) => (
               <tr key={b.id}>
-                <td style={{ padding: '12px', border: '1px solid #ddd' }}><strong>{b.guest_name}</strong></td>
-                <td style={{ padding: '12px', border: '1px solid #ddd' }}>{b.guest_email}<br/>{b.guest_phone}</td>
+                <td style={{ padding: '12px', border: '1px solid #ddd' }}><strong>{b.guest_name || 'N/A'}</strong></td>
+                <td style={{ padding: '12px', border: '1px solid #ddd', fontSize: '14px' }}>
+                  {b.guest_email && <div>{b.guest_email}</div>}
+                  {b.guest_phone && <div style={{ color: '#555' }}>{b.guest_phone}</div>}
+                  {!b.guest_email && !b.guest_phone && 'N/A'}
+                </td>
+                <td style={{ padding: '12px', border: '1px solid #ddd', fontSize: '14px' }}>
+                  <strong>{b.guest_count || 'N/A'}</strong>
+                  {b.guest_ages && <div style={{ color: '#555', marginTop: '4px' }}>{b.guest_ages}</div>}
+                </td>
                 <td style={{ padding: '12px', border: '1px solid #ddd' }}><strong>{b.room_name}</strong></td>
                 <td style={{ padding: '12px', border: '1px solid #ddd' }}>{formatDate(b.check_in)}</td>
                 <td style={{ padding: '12px', border: '1px solid #ddd' }}>{formatDate(b.check_out)}</td>
