@@ -4,10 +4,8 @@ function BookingPage() {
   const [selectedRoom, setSelectedRoom] = useState('buffalo');
   const [viewDate, setViewDate] = useState(new Date()); 
   
-  // NEW: We now track a Start Date and an End Date
   const [checkIn, setCheckIn] = useState(null);
   const [checkOut, setCheckOut] = useState(null);
-  
   const [errorMessage, setErrorMessage] = useState('');
 
   const rooms = [
@@ -62,72 +60,71 @@ function BookingPage() {
   const emptyDays = Array.from({ length: firstDayOfMonth }, (_, i) => i);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  // --- NAVIGATION CONTROLS ---
   const isPrevDisabled = currentYear === today.getFullYear() && currentMonth === today.getMonth();
   const isNextDisabled = currentYear === today.getFullYear() + 1 && currentMonth === today.getMonth();
 
   const handlePrevMonth = () => { if (!isPrevDisabled) setViewDate(new Date(currentYear, currentMonth - 1, 1)); };
   const handleNextMonth = () => { if (!isNextDisabled) setViewDate(new Date(currentYear, currentMonth + 1, 1)); };
 
-  // --- NEW RANGE SELECTION LOGIC ---
+  // Helper function to check if a range of dates hits any already-booked dates
+  const checkOverlap = (startDate, endDate) => {
+    let current = new Date(startDate);
+    while (current <= endDate) {
+      if (currentBookedDates.includes(formatDate(current))) return true;
+      current.setDate(current.getDate() + 1);
+    }
+    return false;
+  };
+
+  // --- SMART AUTO-SELECT LOGIC ---
   const handleDateClick = (day, isBooked, isPast) => {
     if (isPast) return;
     setErrorMessage('');
 
     const clickedDateStr = formatDate(new Date(currentYear, currentMonth, day));
+    const dClicked = parseDate(clickedDateStr);
 
-    // SCENARIO 1: Starting fresh or resetting
-    if (!checkIn || (checkIn && checkOut)) {
-      if (isBooked) {
-        setErrorMessage('This date is already booked.');
-        return;
+    // SCENARIO 1: We already have a check-in. Are they trying to extend their stay?
+    if (checkIn) {
+      const dCheckIn = parseDate(checkIn);
+      
+      // If they clicked a date AFTER their check-in
+      if (dClicked > dCheckIn) {
+        const diffTime = Math.abs(dClicked - dCheckIn);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // If it's a valid extension (3 or more nights)
+        if (diffDays >= 3) {
+          if (checkOverlap(dCheckIn, dClicked)) {
+            setErrorMessage('Cannot extend to this date. It overlaps with an existing reservation.');
+            return;
+          }
+          // Success! Extend the checkout date!
+          setCheckOut(clickedDateStr);
+          return;
+        }
       }
-      setCheckIn(clickedDateStr);
-      setCheckOut(null);
+    }
+
+    // SCENARIO 2: Brand new selection OR they clicked a date to start over
+    if (isBooked) {
+      setErrorMessage('This date is already booked.');
       return;
     }
 
-    // SCENARIO 2: Check-In is set, now setting Check-Out
-    if (checkIn && !checkOut) {
-      const d1 = parseDate(checkIn);
-      const d2 = parseDate(clickedDateStr);
+    // Automatically calculate the checkout date (3 days later)
+    const autoCheckOutDate = new Date(dClicked);
+    autoCheckOutDate.setDate(autoCheckOutDate.getDate() + 3);
 
-      // If they clicked a date BEFORE their check-in date, restart the selection
-      if (d2 <= d1) {
-        if (!isBooked) setCheckIn(clickedDateStr);
-        return;
-      }
-
-      // Calculate the number of nights
-      const diffTime = Math.abs(d2 - d1);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      // Enforce the 3-night minimum
-      if (diffDays < 3) {
-        setErrorMessage('Reservations require a minimum 3-night stay. Please select a later checkout date.');
-        return;
-      }
-
-      // Check if any of the days in their new range overlap with existing bookings
-      let hasOverlap = false;
-      let current = new Date(d1);
-      while (current <= d2) {
-        if (currentBookedDates.includes(formatDate(current))) {
-          hasOverlap = true;
-          break;
-        }
-        current.setDate(current.getDate() + 1);
-      }
-
-      if (hasOverlap) {
-        setErrorMessage('Your selected dates overlap with an existing reservation. Please choose a different range.');
-        setCheckIn(null);
-        return;
-      }
-
-      // Success! Set the checkout date
-      setCheckOut(clickedDateStr);
+    // Ensure this new 3-day block doesn't hit someone else's reservation
+    if (checkOverlap(dClicked, autoCheckOutDate)) {
+      setErrorMessage('Cannot start here. The mandatory 3-night minimum stay overlaps with an existing reservation.');
+      return;
     }
+
+    // Success! Lock in the 3 nights automatically!
+    setCheckIn(clickedDateStr);
+    setCheckOut(formatDate(autoCheckOutDate));
   };
 
   const handleRoomChange = (roomId) => {
@@ -151,11 +148,9 @@ function BookingPage() {
       selectedDatesArray.push(formatDate(curr));
       curr.setDate(curr.getDate() + 1);
     }
-  } else if (checkIn) {
-    selectedDatesArray = [checkIn];
   }
 
-  // Calculate total nights for the success message
+  // Calculate total nights
   let totalNights = 0;
   if (checkIn && checkOut) {
     totalNights = Math.ceil(Math.abs(parseDate(checkOut) - parseDate(checkIn)) / (1000 * 60 * 60 * 24));
@@ -167,7 +162,7 @@ function BookingPage() {
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Check Availability</h1>
         <p style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold' }}>
-          * Please note: All reservations require a minimum 3-night stay.
+          * All reservations require a minimum 3-night stay.
         </p>
       </div>
 
@@ -198,25 +193,14 @@ function BookingPage() {
       {/* CALENDAR CONTAINER */}
       <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', maxWidth: '600px', margin: '0 auto' }}>
         
-        {/* Month Navigation Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <button 
-            onClick={handlePrevMonth} 
-            disabled={isPrevDisabled}
-            style={{ padding: '8px 15px', backgroundColor: isPrevDisabled ? '#eee' : '#2d4a22', color: isPrevDisabled ? '#aaa' : 'white', border: 'none', borderRadius: '4px', cursor: isPrevDisabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-          >
+          <button onClick={handlePrevMonth} disabled={isPrevDisabled} style={{ padding: '8px 15px', backgroundColor: isPrevDisabled ? '#eee' : '#2d4a22', color: isPrevDisabled ? '#aaa' : 'white', border: 'none', borderRadius: '4px', cursor: isPrevDisabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
             &larr; Prev
           </button>
           
-          <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', margin: 0 }}>
-            {monthName}
-          </h2>
+          <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', margin: 0 }}>{monthName}</h2>
 
-          <button 
-            onClick={handleNextMonth} 
-            disabled={isNextDisabled}
-            style={{ padding: '8px 15px', backgroundColor: isNextDisabled ? '#eee' : '#2d4a22', color: isNextDisabled ? '#aaa' : 'white', border: 'none', borderRadius: '4px', cursor: isNextDisabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-          >
+          <button onClick={handleNextMonth} disabled={isNextDisabled} style={{ padding: '8px 15px', backgroundColor: isNextDisabled ? '#eee' : '#2d4a22', color: isNextDisabled ? '#aaa' : 'white', border: 'none', borderRadius: '4px', cursor: isNextDisabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
             Next &rarr;
           </button>
         </div>
@@ -286,24 +270,20 @@ function BookingPage() {
 
         {/* Selection Feedback */}
         <div style={{ marginTop: '30px', textAlign: 'center', minHeight: '80px' }}>
-          {!checkIn && !checkOut && (
+          {!checkIn && (
              <p style={{ fontSize: '1.1rem', color: '#666', fontStyle: 'italic', marginTop: '10px' }}>
-               Click your desired <strong>Check-In</strong> date to begin.
-             </p>
-          )}
-
-          {checkIn && !checkOut && (
-             <p style={{ fontSize: '1.2rem', color: '#2d4a22', fontWeight: 'bold', marginTop: '10px' }}>
-               Check-In: {displayPrettyDate(checkIn)} <br/>
-               <span style={{ fontSize: '1rem', color: '#555', fontWeight: 'normal' }}>Now click your Checkout date (minimum 3 nights).</span>
+               Click your desired <strong>Check-In</strong> date. We will automatically select your 3-night minimum stay.
              </p>
           )}
 
           {checkIn && checkOut && (
             <div>
-              <p style={{ fontSize: '1.2rem', color: '#2d4a22', fontWeight: 'bold', marginBottom: '15px' }}>
+              <p style={{ fontSize: '1.2rem', color: '#2d4a22', fontWeight: 'bold', marginBottom: '5px' }}>
                 {totalNights}-Night Stay Selected: <br/> 
                 {displayPrettyDate(checkIn)} – {displayPrettyDate(checkOut)}
+              </p>
+              <p style={{ fontSize: '0.95rem', color: '#666', marginBottom: '15px', fontStyle: 'italic' }}>
+                Want to stay longer? Click any available date after your checkout to extend your stay, or choose a new start date.
               </p>
               <button style={{ backgroundColor: '#2d4a22', color: 'white', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
                 Continue to Booking
