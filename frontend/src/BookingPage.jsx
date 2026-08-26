@@ -2,21 +2,23 @@ import React, { useState } from 'react';
 
 function BookingPage() {
   const [selectedRoom, setSelectedRoom] = useState('buffalo');
-  // We now track the month the user is currently looking at
   const [viewDate, setViewDate] = useState(new Date()); 
-  const [selectedDates, setSelectedDates] = useState([]); 
+  
+  // NEW: We now track a Start Date and an End Date
+  const [checkIn, setCheckIn] = useState(null);
+  const [checkOut, setCheckOut] = useState(null);
+  
   const [errorMessage, setErrorMessage] = useState('');
 
   const rooms = [
     { id: 'buffalo', name: 'Buffalo Ridge' },
     { id: 'bighorn', name: 'BigHorn Lookout' },
     { id: 'deer', name: 'Deer Run' },
-    { id: 'combo-bd', name: 'Family Combo: BigHorn + Deer Run' },
+    { id: 'combo-bd', name: 'Family Combo: BigHorn & Deer Run' },
     { id: 'family', name: 'Ultimate Family Package (All Rooms)' }
   ];
 
-  // CLEARED OUT: All dates are now completely open!
-  // These will eventually be filled by your database with formatted dates like "2026-09-15"
+  // Base booked dates (Open for now, ready for your database later!)
   const baseBookedDates = {
     buffalo: [],
     bighorn: [],
@@ -42,16 +44,18 @@ function BookingPage() {
   // --- CALENDAR & DATE MATH ---
   const today = new Date();
   
-  // Format a Date object to "YYYY-MM-DD" for accurate tracking
   const formatDate = (dateObj) => {
     return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
   };
 
+  const parseDate = (dateStr) => {
+    const [y, m, d] = dateStr.split('-');
+    return new Date(y, m - 1, d);
+  };
+
   const currentYear = viewDate.getFullYear();
   const currentMonth = viewDate.getMonth();
-  
   const monthName = viewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-  
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
 
@@ -59,58 +63,103 @@ function BookingPage() {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   // --- NAVIGATION CONTROLS ---
-  // Disable "Previous" if we are looking at the current month
   const isPrevDisabled = currentYear === today.getFullYear() && currentMonth === today.getMonth();
-  // Disable "Next" if we are 12 months ahead
   const isNextDisabled = currentYear === today.getFullYear() + 1 && currentMonth === today.getMonth();
 
-  const handlePrevMonth = () => {
-    if (!isPrevDisabled) setViewDate(new Date(currentYear, currentMonth - 1, 1));
-  };
+  const handlePrevMonth = () => { if (!isPrevDisabled) setViewDate(new Date(currentYear, currentMonth - 1, 1)); };
+  const handleNextMonth = () => { if (!isNextDisabled) setViewDate(new Date(currentYear, currentMonth + 1, 1)); };
 
-  const handleNextMonth = () => {
-    if (!isNextDisabled) setViewDate(new Date(currentYear, currentMonth + 1, 1));
-  };
-
-  // --- 3-NIGHT MINIMUM LOGIC ---
+  // --- NEW RANGE SELECTION LOGIC ---
   const handleDateClick = (day, isBooked, isPast) => {
-    if (isBooked || isPast) return;
-
+    if (isPast) return;
     setErrorMessage('');
 
-    // Create real Date objects for the 3 days so it can cross over into new months safely
-    const d1 = new Date(currentYear, currentMonth, day);
-    const d2 = new Date(currentYear, currentMonth, day + 1);
-    const d3 = new Date(currentYear, currentMonth, day + 2);
+    const clickedDateStr = formatDate(new Date(currentYear, currentMonth, day));
 
-    const s1 = formatDate(d1);
-    const s2 = formatDate(d2);
-    const s3 = formatDate(d3);
-
-    // Check if the 2nd or 3rd day are already booked
-    if (currentBookedDates.includes(s2) || currentBookedDates.includes(s3)) {
-      setErrorMessage(`Cannot book starting on this date. The mandatory 3-night stay overlaps with an existing reservation.`);
-      setSelectedDates([]);
+    // SCENARIO 1: Starting fresh or resetting
+    if (!checkIn || (checkIn && checkOut)) {
+      if (isBooked) {
+        setErrorMessage('This date is already booked.');
+        return;
+      }
+      setCheckIn(clickedDateStr);
+      setCheckOut(null);
       return;
     }
 
-    // Success! Save the exact formatted dates
-    setSelectedDates([s1, s2, s3]);
+    // SCENARIO 2: Check-In is set, now setting Check-Out
+    if (checkIn && !checkOut) {
+      const d1 = parseDate(checkIn);
+      const d2 = parseDate(clickedDateStr);
+
+      // If they clicked a date BEFORE their check-in date, restart the selection
+      if (d2 <= d1) {
+        if (!isBooked) setCheckIn(clickedDateStr);
+        return;
+      }
+
+      // Calculate the number of nights
+      const diffTime = Math.abs(d2 - d1);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      // Enforce the 3-night minimum
+      if (diffDays < 3) {
+        setErrorMessage('Reservations require a minimum 3-night stay. Please select a later checkout date.');
+        return;
+      }
+
+      // Check if any of the days in their new range overlap with existing bookings
+      let hasOverlap = false;
+      let current = new Date(d1);
+      while (current <= d2) {
+        if (currentBookedDates.includes(formatDate(current))) {
+          hasOverlap = true;
+          break;
+        }
+        current.setDate(current.getDate() + 1);
+      }
+
+      if (hasOverlap) {
+        setErrorMessage('Your selected dates overlap with an existing reservation. Please choose a different range.');
+        setCheckIn(null);
+        return;
+      }
+
+      // Success! Set the checkout date
+      setCheckOut(clickedDateStr);
+    }
   };
 
   const handleRoomChange = (roomId) => {
     setSelectedRoom(roomId);
-    setSelectedDates([]);
+    setCheckIn(null);
+    setCheckOut(null);
     setErrorMessage('');
   };
 
-  // Helper to make selected dates look pretty for the user at the bottom
   const displayPrettyDate = (dateString) => {
     if (!dateString) return '';
-    const [y, m, d] = dateString.split('-');
-    const dateObj = new Date(y, m - 1, d);
-    return dateObj.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+    return parseDate(dateString).toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
   };
+
+  // Generate an array of all selected dates to highlight them green on the calendar
+  let selectedDatesArray = [];
+  if (checkIn && checkOut) {
+    let curr = parseDate(checkIn);
+    const last = parseDate(checkOut);
+    while (curr <= last) {
+      selectedDatesArray.push(formatDate(curr));
+      curr.setDate(curr.getDate() + 1);
+    }
+  } else if (checkIn) {
+    selectedDatesArray = [checkIn];
+  }
+
+  // Calculate total nights for the success message
+  let totalNights = 0;
+  if (checkIn && checkOut) {
+    totalNights = Math.ceil(Math.abs(parseDate(checkOut) - parseDate(checkIn)) / (1000 * 60 * 60 * 24));
+  }
 
   return (
     <div style={{ padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
@@ -184,12 +233,10 @@ function BookingPage() {
           {days.map(day => {
             const dateStr = formatDate(new Date(currentYear, currentMonth, day));
             const isBooked = currentBookedDates.includes(dateStr);
-            const isSelected = selectedDates.includes(dateStr);
-            
-            // Check if date is in the past (before today)
+            const isSelected = selectedDatesArray.includes(dateStr);
             const isPast = new Date(currentYear, currentMonth, day, 23, 59, 59) < today;
 
-            let bgColor = '#e2e3e5'; // Default available
+            let bgColor = '#e2e3e5';
             let txtColor = '#333';
             let cursorStyle = 'pointer';
 
@@ -238,21 +285,30 @@ function BookingPage() {
         )}
 
         {/* Selection Feedback */}
-        <div style={{ marginTop: '30px', textAlign: 'center', minHeight: '60px' }}>
-          {selectedDates.length > 0 ? (
+        <div style={{ marginTop: '30px', textAlign: 'center', minHeight: '80px' }}>
+          {!checkIn && !checkOut && (
+             <p style={{ fontSize: '1.1rem', color: '#666', fontStyle: 'italic', marginTop: '10px' }}>
+               Click your desired <strong>Check-In</strong> date to begin.
+             </p>
+          )}
+
+          {checkIn && !checkOut && (
+             <p style={{ fontSize: '1.2rem', color: '#2d4a22', fontWeight: 'bold', marginTop: '10px' }}>
+               Check-In: {displayPrettyDate(checkIn)} <br/>
+               <span style={{ fontSize: '1rem', color: '#555', fontWeight: 'normal' }}>Now click your Checkout date (minimum 3 nights).</span>
+             </p>
+          )}
+
+          {checkIn && checkOut && (
             <div>
               <p style={{ fontSize: '1.2rem', color: '#2d4a22', fontWeight: 'bold', marginBottom: '15px' }}>
-                3-Night Stay Selected: <br/> 
-                {displayPrettyDate(selectedDates[0])} – Checkout {displayPrettyDate(selectedDates[2])}
+                {totalNights}-Night Stay Selected: <br/> 
+                {displayPrettyDate(checkIn)} – {displayPrettyDate(checkOut)}
               </p>
               <button style={{ backgroundColor: '#2d4a22', color: 'white', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
                 Continue to Booking
               </button>
             </div>
-          ) : (
-            <p style={{ fontSize: '1.1rem', color: '#666', fontStyle: 'italic', marginTop: '10px' }}>
-              Click on an available start date to reserve your 3-night block.
-            </p>
           )}
         </div>
 
