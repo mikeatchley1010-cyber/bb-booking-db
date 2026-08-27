@@ -9,10 +9,9 @@ function RoomsRates() {
       name: 'Ultimate Family Package (All Rooms)',
       rate: '$395 / night',
       description: 'Book the entire Bed & Breakfast for your ultimate private getaway. Enjoy exclusive access to all three rooms—Buffalo Ridge, BigHorn Lookout, and Deer Run—for your family or group.',
-      features: ['Hot Breakfast', 'Sleeps up to 6 Adults', 'Three Bathrooms', 'Ultimate Privacy', 'Roll away; pack & play available', 'Free Wi-Fi & TV'],
+      features: ['Three Bathrooms','Hot Breakfast', 'Sleeps up to 6 Adults', 'Accommidates small children','Roll away; pack & play available', 'Ultimate Privacy', 'Free Wi-Fi & TV'],
       images: ['/Buffalo2.JPG', '/Bighorn2-rm.jpeg']
-    },
-    {
+    },    {
       id: 'combo-bd',
       name: 'Family Combo: BigHorn & Deer Run',
       rate: '$295 / night',
@@ -41,7 +40,7 @@ function RoomsRates() {
       name: 'Deer Run',
       rate: '$150 / night',
       description: 'A peaceful, secluded room tucked away for ultimate privacy and relaxation after a long day of exploring the Black Hills.',
-      features: ['Queen Size Bed & Trundel Bed', 'En-suite Bathroom', 'Large back deck', 'Walk-in Shower', 'Free Wi-Fi'],
+      features: ['Double Size Bed & Trundel Bed', 'En-suite Bathroom', 'private access to Large back deck', 'Walk-in Shower', 'Free Wi-Fi & TV'],
       images: ['/Deerrun1-rm.jpeg', '/deerrunbath.JPG']
     }
   ];
