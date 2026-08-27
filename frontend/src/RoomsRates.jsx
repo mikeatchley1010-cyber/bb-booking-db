@@ -9,7 +9,7 @@ function RoomsRates() {
       name: 'Ultimate Family Package (All Rooms)',
       rate: '$395 / night',
       description: 'Book the entire Bed & Breakfast for your ultimate private getaway. Enjoy exclusive access to all three rooms—Buffalo Ridge, BigHorn Lookout, and Deer Run—for your family or group.',
-      features: ['Entire Property Access', 'Sleeps up to 6 Adults', 'Three Bathrooms', 'Ultimate Privacy', 'Roll away; jump & play available'],
+      features: ['Hot Breakfast', 'Sleeps up to 6 Adults', 'Three Bathrooms', 'Ultimate Privacy', 'Roll away; pack & play available', 'Free Wi-Fi & TV'],
       images: ['/Buffalo2.JPG', '/Bighorn2-rm.jpeg']
     },
     {
@@ -17,7 +17,7 @@ function RoomsRates() {
       name: 'Family Combo: BigHorn & Deer Run',
       rate: '$295 / night',
       description: 'Perfect for families with kids! These two rooms feature a convenient adjoining door, giving you the space and privacy of two separate rooms while keeping everyone safely connected.',
-      features: ['Adjoining Door', '1 Queen Bed & 1 Double + trundel bed', 'Two Bathrooms', 'Sleeps up to 4 Adults'],
+      features: ['Adjoining Door', '1 Queen Bed & 1 Double + trundel bed', 'Accommidates small children', 'Hot Breakfast', 'Sleeps up to 4 Adults','Free Wi-Fi & TV'],
       images: ['/BigHornrm3.JPG', '/deerrun2.JPG'] 
     },
     {
@@ -25,7 +25,7 @@ function RoomsRates() {
       name: 'Buffalo Ridge',
       rate: '$175 / night',
       description: 'A cozy, rustic retreat with sweeping valley views and premium comforts. The perfect getaway to unwind and disconnect.',
-      features: ['Queen Size Bed', 'En-suite Bathroom', 'Private Balcony', 'Free Wi-Fi'],
+      features: ['Queen Size Bed', 'En-suite Bathroom', 'Private Balcony', 'Hot Breakfast', 'Free Wi-Fi & TV'],
       images: ['/Buffaloridge.JPG', '/BuffaloBath1.jpeg']
     },
     {
@@ -33,7 +33,7 @@ function RoomsRates() {
       name: 'BigHorn Lookout',
       rate: '$175 / night',
       description: 'Spacious and bright, featuring a private balcony perfect for your morning Home rosted coffee while watching the sun rise over the canyon.',
-      features: ['Queen Size Bed', 'Private Balcony', 'Sitting Area', 'Free Wi-Fi'],
+      features: ['Queen Size Bed', 'En-suite Bathroom', 'Private Balcony', 'Sitting Area', 'Hot Breakfast', 'Free Wi-Fi & TV'],
       images: ['/Bighorn2-rm.jpeg', '/Bighorn-bath.jpeg']
     },
     {
@@ -41,7 +41,7 @@ function RoomsRates() {
       name: 'Deer Run',
       rate: '$150 / night',
       description: 'A peaceful, secluded room tucked away for ultimate privacy and relaxation after a long day of exploring the Black Hills.',
-      features: ['Queen Size Bed & Trundel Bed', 'Large back deck', 'Walk-in Shower', 'Free Wi-Fi'],
+      features: ['Queen Size Bed & Trundel Bed', 'En-suite Bathroom', 'Large back deck', 'Walk-in Shower', 'Free Wi-Fi'],
       images: ['/Deerrun1-rm.jpeg', '/deerrunbath.JPG']
     }
   ];
