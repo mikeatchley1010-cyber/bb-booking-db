@@ -10,7 +10,7 @@ function RoomsRates() {
       rate: '$395 / night',
       description: 'Book the entire Bed & Breakfast for your ultimate private getaway. Enjoy exclusive access to all three rooms—Buffalo Ridge, BigHorn Lookout, and Deer Run—for your family or group.',
       features: ['Entire Property Access', 'Sleeps up to 6 Adults', 'Three Bathrooms', 'Ultimate Privacy', 'Roll away; jump & play available'],
-      images: ['/LivingRm.JPG', '/Bighorn2-rm.jpeg']
+      images: ['/Buffalo2.JPG', '/Bighorn2-rm.jpeg']
     },
     {
       id: 'combo-bd',
