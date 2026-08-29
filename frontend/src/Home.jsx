@@ -57,7 +57,7 @@ function Home() {
         <div style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
           
           {/* 👉 UPDATED: Now pointing to your local hosts.jpg file */}
-          <div style={{ height: '220px', backgroundImage: 'url("/Host.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#eee' }}></div>
+          <div style={{ height: '220px', backgroundImage: 'url("/Host1.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#eee' }}></div>
           
           <div style={{ padding: '30px', flex: '1', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ fontSize: '1.6rem', color: '#2d4a22', marginBottom: '15px' }}>Meet Your Hosts</h3>
