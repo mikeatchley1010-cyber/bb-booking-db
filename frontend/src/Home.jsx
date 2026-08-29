@@ -5,7 +5,7 @@ function Home() {
   return (
     <div style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', paddingBottom: '60px' }}>
       
-      {/* HERO SECTION - Now narrower (40vh instead of 70vh) */}
+      {/* HERO SECTION */}
       <div style={{ 
         height: '40vh', 
         minHeight: '350px',
@@ -27,7 +27,6 @@ function Home() {
           Your private escape in the heart of the Black Hills
         </p>
         
-        {/* Button now links directly to the Rooms & Rates page */}
         <Link to="/rooms-and-rates" style={{ 
           backgroundColor: '#2d4a22', 
           color: 'white', 
@@ -51,13 +50,15 @@ function Home() {
         </p>
       </div>
 
-      {/* NEW HIGHLIGHTS CARDS WITH IMAGES & MAP */}
+      {/* HIGHLIGHTS CARDS */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
         
         {/* BOX 1: Meet Your Hosts */}
         <div style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
-          {/* Placeholder Image - Change this to a photo of yourselves later! */}
-          <div style={{ height: '220px', backgroundImage: 'url("https://images.unsplash.com/photo-1542044801-38d4eb07df92?w=600&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#eee' }}></div>
+          
+          {/* 👉 UPDATED: Now pointing to your local hosts.jpg file */}
+          <div style={{ height: '220px', backgroundImage: 'url("/Host.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#eee' }}></div>
+          
           <div style={{ padding: '30px', flex: '1', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ fontSize: '1.6rem', color: '#2d4a22', marginBottom: '15px' }}>Meet Your Hosts</h3>
             <p style={{ color: '#666', lineHeight: '1.6', margin: 0 }}>
@@ -68,7 +69,6 @@ function Home() {
 
         {/* BOX 2: Perfect Location (Interactive Map) */}
         <div style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
-          {/* Live Google Map pointing to Cleghorn Canyon Rd */}
           <div style={{ height: '220px', backgroundColor: '#eee' }}>
             <iframe 
               title="Cleghorn Canyon Location"
@@ -91,8 +91,10 @@ function Home() {
 
         {/* BOX 3: Nature at Your Door */}
         <div style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
-          {/* Placeholder Image - Change this to a nice wildlife or trail photo later! */}
-          <div style={{ height: '220px', backgroundImage: 'url("https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80")', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#eee' }}></div>
+          
+          {/* 👉 UPDATED: Now pointing to your local nature.jpg file */}
+          <div style={{ height: '220px', backgroundImage: 'url("/Canyonkake.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#eee' }}></div>
+          
           <div style={{ padding: '30px', flex: '1', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ fontSize: '1.6rem', color: '#2d4a22', marginBottom: '15px' }}>Nature at Your Door</h3>
             <p style={{ color: '#666', lineHeight: '1.6', margin: 0 }}>
@@ -102,7 +104,6 @@ function Home() {
         </div>
 
       </div>
-
     </div>
   );
 }
