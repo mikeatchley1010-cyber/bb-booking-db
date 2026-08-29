@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 function ContactUs() {
   // Your actual contact details go here!
   const contactInfo = {
-    phone: "(555) 123-4567",
-    email: "info@cleghorncanyonbb.com",
-    address: "123 Canyon Road, Rapid City, SD 57702"
+    phone: "(605) 646-0257",
+    email: "cleghorn.canyonbb@gmail.com",
+    address: "5625 Cleghorn Canyon Road, Rapid City, SD 57702"
   };
 
   // Form State
