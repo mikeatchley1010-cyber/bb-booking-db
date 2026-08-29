@@ -1,103 +1,63 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-function ContactUs() {
-  // Your actual contact details go here!
-  const contactInfo = {
-    phone: "(605) 646-0257",
-    email: "cleghorn.canyonbb@gmail.com",
-    address: "5625 Cleghorn Canyon Road, Rapid City, SD 57702"
-  };
-
-  // Form State
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [status, setStatus] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setStatus("Thank you! Your message has been sent. We will get back to you shortly.");
-    setName('');
-    setEmail('');
-    setSubject('');
-    setMessage('');
-  };
+function Contact() {
+  
+  // 👉 UPDATE THIS WITH YOUR REAL PHONE NUMBER!
+  const displayPhone = "(605) 646-0257"; 
+  const clickToCallLink = "tel:6056460257"; // No dashes or spaces here, just the numbers
 
   return (
-    <div style={{ padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
+    <div style={{ padding: '40px 20px', maxWidth: '800px', margin: '0 auto', fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
       
-      <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
         <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Contact Us</h1>
-        <p style={{ fontSize: '1.2rem', color: '#555', maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
-          Have a question about a reservation, our rooms, or the local area? We would love to hear from you.
+        <p style={{ fontSize: '1.2rem', color: '#555', lineHeight: '1.6' }}>
+          We would love to hear from you! Reach out with any questions about your stay, special requests, or booking inquiries.
         </p>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '40px' }}>
+      <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '50px 30px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '40px' }}>
         
-        {/* Left Side: Contact Info */}
-        <div style={{ flex: '1 1 350px', backgroundColor: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.8rem', color: '#2d4a22', marginBottom: '25px' }}>Get in Touch</h2>
-          
-          <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '1.1rem', color: '#555', marginBottom: '5px' }}>Phone</h3>
-            <p style={{ fontSize: '1.2rem', color: '#333', fontWeight: 'bold' }}>{contactInfo.phone}</p>
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '1.1rem', color: '#555', marginBottom: '5px' }}>Email</h3>
-            <p style={{ fontSize: '1.2rem', color: '#333', fontWeight: 'bold' }}>{contactInfo.email}</p>
-          </div>
-
-          <div style={{ marginBottom: '30px' }}>
-            <h3 style={{ fontSize: '1.1rem', color: '#555', marginBottom: '5px' }}>Location</h3>
-            <p style={{ fontSize: '1.1rem', color: '#333', lineHeight: '1.5' }}>{contactInfo.address}</p>
-          </div>
-
-          <div style={{ height: '200px', backgroundColor: '#e9ecef', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6c757d', fontStyle: 'italic' }}>
-            Interactive Map Coming Soon!
-          </div>
+        {/* EMAIL SECTION */}
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.3rem', color: '#555', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Email Us</h2>
+          {/* This href="mailto:..." is what opens their email app automatically */}
+          <a 
+            href="mailto:cleghorn.canyonbb@gmail.com" 
+            style={{ fontSize: '1.4rem', color: '#2d4a22', fontWeight: 'bold', textDecoration: 'none', borderBottom: '2px solid #2d4a22', paddingBottom: '2px' }}
+          >
+            cleghorn.canyonbb@gmail.com
+          </a>
         </div>
 
-        {/* Right Side: Contact Form */}
-        <div style={{ flex: '2 1 400px', backgroundColor: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.8rem', color: '#2d4a22', marginBottom: '25px' }}>Send a Message</h2>
-          
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#555', marginBottom: '8px' }}>Your Name *</label>
-                <input type="text" required value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '6px', boxSizing: 'border-box' }} />
-              </div>
-              <div style={{ flex: '1 1 200px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#555', marginBottom: '8px' }}>Email Address *</label>
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '6px', boxSizing: 'border-box' }} />
-              </div>
-            </div>
+        <hr style={{ border: 'none', borderTop: '1px solid #eaeaea', width: '60%', margin: '0 auto' }} />
 
-            <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#555', marginBottom: '8px' }}>Subject</label>
-              <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '6px', boxSizing: 'border-box' }} />
-            </div>
+        {/* PHONE SECTION */}
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.3rem', color: '#555', marginBottom: '15px', textTransform: 'uppercase', letterSpacing: '1px' }}>Call Us</h2>
+          {/* This href="tel:..." is what makes cell phones dial the number instantly */}
+          <a 
+            href={clickToCallLink} 
+            style={{ fontSize: '1.4rem', color: 'white', backgroundColor: '#2d4a22', fontWeight: 'bold', textDecoration: 'none', padding: '12px 30px', borderRadius: '30px', display: 'inline-block', boxShadow: '0 4px 10px rgba(45,74,34,0.3)', transition: 'transform 0.2s' }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            📞 {displayPhone}
+          </a>
+          <p style={{ fontSize: '0.95rem', color: '#888', marginTop: '15px', fontStyle: 'italic' }}>
+            (Tap the button from your mobile phone to call instantly)
+          </p>
+        </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#555', marginBottom: '8px' }}>Message *</label>
-              <textarea required value={message} onChange={(e) => setMessage(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '6px', boxSizing: 'border-box', minHeight: '150px', resize: 'vertical' }}></textarea>
-            </div>
+        <hr style={{ border: 'none', borderTop: '1px solid #eaeaea', width: '60%', margin: '0 auto' }} />
 
-            <button type="submit" style={{ backgroundColor: '#2d4a22', color: 'white', padding: '15px 30px', border: 'none', borderRadius: '6px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', alignSelf: 'flex-start', transition: 'background-color 0.2s' }}>
-              Send Message
-            </button>
-
-            {status && (
-              <div style={{ marginTop: '15px', padding: '15px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '6px', fontWeight: 'bold' }}>
-                {status}
-              </div>
-            )}
-
-          </form>
+        {/* LOCATION SECTION */}
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.3rem', color: '#555', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Location</h2>
+          <p style={{ fontSize: '1.2rem', color: '#333', margin: 0, lineHeight: '1.6' }}>
+            Cleghorn Canyon Rd<br />
+            Rapid City, SD 57702
+          </p>
         </div>
 
       </div>
@@ -105,5 +65,4 @@ function ContactUs() {
   );
 }
 
-// THIS is the crucial line that was missing!
-export default ContactUs;
+export default Contact;
