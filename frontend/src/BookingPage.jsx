@@ -1,7 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 function BookingPage() {
-  const [selectedRoom, setSelectedRoom] = useState('buffalo');
+  const location = useLocation();
+  
+  // 👉 NEW: This instantly reads the URL to see which room they clicked from the other page!
+  // If they didn't click a specific room, it defaults to the 'family' package.
+  const [selectedRoom, setSelectedRoom] = useState(() => {
+    const queryParams = new URLSearchParams(location.search);
+    return queryParams.get('room') || 'family';
+  });
+
   const [viewDate, setViewDate] = useState(new Date()); 
   
   const [checkIn, setCheckIn] = useState(null);
@@ -12,12 +21,25 @@ function BookingPage() {
   const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '' });
   const [bookingStatus, setBookingStatus] = useState('');
 
+  // This ensures that if they use the browser's "back" or "forward" buttons, the tab still updates
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const roomFromUrl = queryParams.get('room');
+    if (roomFromUrl) {
+      setSelectedRoom(roomFromUrl);
+      setCheckIn(null);
+      setCheckOut(null);
+      setErrorMessage('');
+    }
+  }, [location.search]);
+
+  // 👉 This matches your exact new order from the Rooms and Rates page
   const rooms = [
+    { id: 'family', name: 'Ultimate Family Package (All Rooms)' },
+    { id: 'combo-bd', name: 'Family Combo: BigHorn & Deer Run' },
     { id: 'buffalo', name: 'Buffalo Ridge' },
     { id: 'bighorn', name: 'BigHorn Lookout' },
-    { id: 'deer', name: 'Deer Run' },
-    { id: 'combo-bd', name: 'Family Combo: BigHorn & Deer Run' },
-    { id: 'family', name: 'Ultimate Family Package (All Rooms)' }
+    { id: 'deer', name: 'Deer Run' }
   ];
 
   const baseBookedDates = { buffalo: [], bighorn: [], deer: [] };
@@ -67,7 +89,6 @@ function BookingPage() {
     setErrorMessage('');
   };
 
-  // We calculate this early now so we can use it to check if they clicked an already-selected date!
   let selectedDatesArray = [];
   if (checkIn && checkOut) {
     let curr = parseDate(checkIn);
@@ -84,7 +105,7 @@ function BookingPage() {
 
     const clickedDateStr = formatDate(new Date(currentYear, currentMonth, day));
     
-    // 👉 NEW: If they click ANY date that is already highlighted green, clear the dates!
+    // Click to clear feature
     if (selectedDatesArray.includes(clickedDateStr)) {
       clearDates();
       return;
@@ -97,6 +118,7 @@ function BookingPage() {
       if (dClicked > dCheckIn) {
         const diffDays = Math.ceil(Math.abs(dClicked - dCheckIn) / (1000 * 60 * 60 * 24));
         
+        // 2-night minimum logic
         if (diffDays >= 2) {
           if (checkOverlap(dCheckIn, dClicked)) {
             setErrorMessage('Cannot extend to this date. It overlaps with an existing reservation.');
@@ -278,7 +300,7 @@ function BookingPage() {
             <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', marginBottom: '10px', textAlign: 'center' }}>Complete Reservation</h2>
             
             <div style={{ backgroundColor: '#f4f7f6', padding: '15px', borderRadius: '8px', marginBottom: '25px' }}>
-              <p style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}><strong>Room:</strong> {rooms.find(r => r.id === selectedRoom).name}</p>
+              <p style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}><strong>Room:</strong> {rooms.find(r => r.id === selectedRoom)?.name}</p>
               <p style={{ margin: '0', fontSize: '1.1rem' }}><strong>Dates:</strong> {displayPrettyDate(checkIn)} - {displayPrettyDate(checkOut)} ({totalNights} nights)</p>
             </div>
 
