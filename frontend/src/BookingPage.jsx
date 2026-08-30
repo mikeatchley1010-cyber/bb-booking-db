@@ -61,11 +61,35 @@ function BookingPage() {
     return false;
   };
 
+  const clearDates = () => {
+    setCheckIn(null);
+    setCheckOut(null);
+    setErrorMessage('');
+  };
+
+  // We calculate this early now so we can use it to check if they clicked an already-selected date!
+  let selectedDatesArray = [];
+  if (checkIn && checkOut) {
+    let curr = parseDate(checkIn);
+    const last = parseDate(checkOut);
+    while (curr <= last) {
+      selectedDatesArray.push(formatDate(curr));
+      curr.setDate(curr.getDate() + 1);
+    }
+  }
+
   const handleDateClick = (day, isBooked, isPast) => {
     if (isPast) return;
     setErrorMessage('');
 
     const clickedDateStr = formatDate(new Date(currentYear, currentMonth, day));
+    
+    // 👉 NEW: If they click ANY date that is already highlighted green, clear the dates!
+    if (selectedDatesArray.includes(clickedDateStr)) {
+      clearDates();
+      return;
+    }
+
     const dClicked = parseDate(clickedDateStr);
 
     if (checkIn) {
@@ -110,27 +134,10 @@ function BookingPage() {
     setBookingStatus('');
   };
 
-  // NEW: Function to clear dates
-  const clearDates = () => {
-    setCheckIn(null);
-    setCheckOut(null);
-    setErrorMessage('');
-  };
-
   const displayPrettyDate = (dateString) => {
     if (!dateString) return '';
     return parseDate(dateString).toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
   };
-
-  let selectedDatesArray = [];
-  if (checkIn && checkOut) {
-    let curr = parseDate(checkIn);
-    const last = parseDate(checkOut);
-    while (curr <= last) {
-      selectedDatesArray.push(formatDate(curr));
-      curr.setDate(curr.getDate() + 1);
-    }
-  }
 
   let totalNights = 0;
   if (checkIn && checkOut) {
@@ -252,7 +259,6 @@ function BookingPage() {
                 <div>
                   <p style={{ fontSize: '1.2rem', color: '#2d4a22', fontWeight: 'bold', marginBottom: '15px' }}>{totalNights}-Night Stay Selected: <br/> {displayPrettyDate(checkIn)} – {displayPrettyDate(checkOut)}</p>
                   
-                  {/* 👉 NEW: CLEAR DATES BUTTON ADDED HERE */}
                   <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
                     <button onClick={clearDates} style={{ backgroundColor: '#e2e3e5', color: '#333', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }}>
                       Clear Dates
@@ -262,7 +268,6 @@ function BookingPage() {
                       Continue to Booking
                     </button>
                   </div>
-
                 </div>
               )}
             </div>
