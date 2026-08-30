@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function RoomsRates() {
+  // NEW: State to track which image is currently expanded
+  const [expandedImg, setExpandedImg] = useState(null);
+
   // I have rearranged this list to match your exact requested order!
   const rooms = [
     {
@@ -62,12 +65,21 @@ function RoomsRates() {
             {/* The 2-Picture Side-by-Side Layout */}
             <div style={{ flex: '1 1 400px', display: 'flex', gap: '2px', backgroundColor: '#eee', minHeight: '350px' }}>
               {room.images.map((img, index) => (
-                <div key={index} style={{ 
-                  flex: '1', 
-                  backgroundImage: `url(${img})`, 
-                  backgroundSize: 'cover', 
-                  backgroundPosition: 'center' 
-                }}></div>
+                <div 
+                  key={index} 
+                  onClick={() => setExpandedImg(img)} // NEW: Click to expand
+                  title="Click to expand"
+                  style={{ 
+                    flex: '1', 
+                    backgroundImage: `url(${img})`, 
+                    backgroundSize: 'cover', 
+                    backgroundPosition: 'center',
+                    cursor: 'zoom-in', // Shows magnifying glass
+                    transition: 'opacity 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                  onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                ></div>
               ))}
             </div>
             
@@ -93,6 +105,55 @@ function RoomsRates() {
           </div>
         ))}
       </div>
+
+      {/* NEW: LIGHTBOX OVERLAY */}
+      {expandedImg && (
+        <div 
+          onClick={() => setExpandedImg(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            zIndex: 9999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'zoom-out'
+          }}
+        >
+          <button 
+            onClick={() => setExpandedImg(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '30px',
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '3rem',
+              cursor: 'pointer',
+              textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+            }}
+          >
+            &times;
+          </button>
+          <img 
+            src={expandedImg} 
+            alt="Expanded room view" 
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              borderRadius: '8px',
+              boxShadow: '0 5px 25px rgba(0,0,0,0.5)',
+              objectFit: 'contain'
+            }} 
+            onClick={(e) => e.stopPropagation()} // Prevents clicking the image itself from closing it
+          />
+        </div>
+      )}
 
     </div>
   );
