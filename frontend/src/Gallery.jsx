@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 function Gallery() {
-  
+  // NEW: State to track which image is currently expanded
+  const [expandedImg, setExpandedImg] = useState(null);
+
   // Here are all your photos, mixed up for a beautifully varied gallery grid!
   const images = [
     "/Housemotorcycle.jpg",
@@ -41,15 +43,19 @@ function Gallery() {
         gap: '20px' 
       }}>
         {images.map((img, index) => (
-          <div key={index} style={{ 
-            height: '250px', 
-            borderRadius: '8px', 
-            overflow: 'hidden', 
-            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-            transition: 'transform 0.3s ease'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          <div 
+            key={index} 
+            onClick={() => setExpandedImg(img)} // NEW: Click to expand
+            style={{ 
+              height: '250px', 
+              borderRadius: '8px', 
+              overflow: 'hidden', 
+              boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+              transition: 'transform 0.3s ease',
+              cursor: 'zoom-in' // NEW: Shows magnifying glass cursor
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
             <div style={{ 
               width: '100%', 
@@ -62,6 +68,55 @@ function Gallery() {
           </div>
         ))}
       </div>
+
+      {/* NEW: LIGHTBOX OVERLAY */}
+      {expandedImg && (
+        <div 
+          onClick={() => setExpandedImg(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            zIndex: 9999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'zoom-out'
+          }}
+        >
+          <button 
+            onClick={() => setExpandedImg(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '30px',
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '3rem',
+              cursor: 'pointer',
+              textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+            }}
+          >
+            &times;
+          </button>
+          <img 
+            src={expandedImg} 
+            alt="Expanded view" 
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              borderRadius: '8px',
+              boxShadow: '0 5px 25px rgba(0,0,0,0.5)',
+              objectFit: 'contain'
+            }} 
+            onClick={(e) => e.stopPropagation()} // Prevents clicking the image itself from closing it
+          />
+        </div>
+      )}
 
     </div>
   );
