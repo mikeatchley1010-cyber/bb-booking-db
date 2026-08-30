@@ -1,162 +1,341 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
-function RoomsRates() {
-  // NEW: State to track which image is currently expanded
-  const [expandedImg, setExpandedImg] = useState(null);
+function BookingPage() {
+  const location = useLocation();
+  
+  // 👉 Defaults to 'family' now since it's first in your list!
+  const [selectedRoom, setSelectedRoom] = useState('family'); 
+  const [viewDate, setViewDate] = useState(new Date()); 
+  
+  const [checkIn, setCheckIn] = useState(null);
+  const [checkOut, setCheckOut] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // I have rearranged this list to match your exact requested order!
-  const rooms = [
-    {
-      id: 'family',
-      name: 'Ultimate Family Package (All Rooms)',
-      rate: '$395 / night',
-      description: 'Book the entire Bed & Breakfast for your ultimate private getaway. Enjoy exclusive access to all three rooms—Buffalo Ridge, BigHorn Lookout, and Deer Run—for your family or group.',
-      features: ['Three Bedrooms/Bathrooms','Free Hot Breakfast', 'Sleeps up to 6 Adults', 'Accommidates small children','Roll away; pack & play available', 'Ultimate Privacy', 'Free Wi-Fi & TV'],
-      images: ['/Buffalo2.JPG', '/Bighorn2-rm.jpeg']
-    },    {
-      id: 'combo-bd',
-      name: 'Family Combo: BigHorn & Deer Run',
-      rate: '$295 / night',
-      description: 'Perfect for families with kids! These two rooms feature a convenient adjoining door, giving you the space and privacy of two separate rooms while keeping everyone safely connected.',
-      features: ['Two Bedrooms/Bathrooms','1 Queen Bed & 1 Double + trundel bed','Sleeps up to 4 Adults', 'Accommidates small children', 'Free Hot Breakfast', 'Adjoining Door','Free Wi-Fi & TV'],
-      images: ['/BigHornrm3.JPG', '/deerrun2.JPG']
-    },
-    {
-      id: 'buffalo',
-      name: 'Buffalo Ridge',
-      rate: '$175 / night',
-      description: 'A cozy, rustic retreat with sweeping valley views and premium comforts. The perfect getaway to unwind and disconnect.',
-      features: ['Queen Size Bed', 'En-suite Bathroom', 'Private Balcony', 'Free Hot Breakfast', 'Free Wi-Fi & TV'],
-      images: ['/Buffaloridge.JPG', '/BuffaloBath1.jpeg']
-    },
-    {
-      id: 'bighorn',
-      name: 'BigHorn Lookout',
-      rate: '$175 / night',
-      description: 'Spacious and bright, featuring a private balcony perfect for your morning Home rosted coffee while watching the sun rise over the canyon.',
-      features: ['Queen Size Bed', 'En-suite Bathroom', 'Private Balcony', 'Sitting Area', 'Free Hot Breakfast', 'Free Wi-Fi & TV'],
-      images: ['/Bighorn2-rm.jpeg', '/Bighorn-bath.jpeg']
-    },
-    {
-      id: 'deer',
-      name: 'Deer Run',
-      rate: '$150 / night',
-      description: 'A peaceful, secluded room tucked away for ultimate privacy and relaxation after a long day of exploring the Black Hills.',
-      features: ['Double Size Bed & Trundel Bed', 'En-suite Bathroom', 'private access to Large back deck', 'Walk-in Shower', , 'Free Hot Breakfast','Free Wi-Fi & TV'],
-      images: ['/Deerrun1-rm.jpeg', '/deerrunbath.JPG']
+  const [showForm, setShowForm] = useState(false);
+  const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '' });
+  const [bookingStatus, setBookingStatus] = useState('');
+
+  // 👉 NEW: Automatically grabs the room from the URL if they clicked it on the other page
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const roomFromUrl = queryParams.get('room');
+    if (roomFromUrl) {
+      setSelectedRoom(roomFromUrl);
     }
+  }, [location.search]);
+
+  // 👉 REORDERED to match your exact request
+  const rooms = [
+    { id: 'family', name: 'Ultimate Family Package (All Rooms)' },
+    { id: 'combo-bd', name: 'Family Combo: BigHorn & Deer Run' },
+    { id: 'buffalo', name: 'Buffalo Ridge' },
+    { id: 'bighorn', name: 'BigHorn Lookout' },
+    { id: 'deer', name: 'Deer Run' }
   ];
 
+  const baseBookedDates = { buffalo: [], bighorn: [], deer: [] };
+
+  const getBookedForRoom = (roomId) => {
+    if (roomId === 'buffalo') return baseBookedDates.buffalo;
+    if (roomId === 'bighorn') return baseBookedDates.bighorn;
+    if (roomId === 'deer') return baseBookedDates.deer;
+    if (roomId === 'combo-bd') return [...new Set([...baseBookedDates.bighorn, ...baseBookedDates.deer])];
+    if (roomId === 'family') return [...new Set([...baseBookedDates.buffalo, ...baseBookedDates.bighorn, ...baseBookedDates.deer])];
+    return [];
+  };
+
+  const currentBookedDates = getBookedForRoom(selectedRoom);
+
+  const today = new Date();
+  const formatDate = (dateObj) => `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+  const parseDate = (dateStr) => { const [y, m, d] = dateStr.split('-'); return new Date(y, m - 1, d); };
+
+  const currentYear = viewDate.getFullYear();
+  const currentMonth = viewDate.getMonth();
+  const monthName = viewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+
+  const emptyDays = Array.from({ length: firstDayOfMonth }, (_, i) => i);
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const isPrevDisabled = currentYear === today.getFullYear() && currentMonth === today.getMonth();
+  const isNextDisabled = currentYear === today.getFullYear() + 1 && currentMonth === today.getMonth();
+
+  const handlePrevMonth = () => { if (!isPrevDisabled) setViewDate(new Date(currentYear, currentMonth - 1, 1)); };
+  const handleNextMonth = () => { if (!isNextDisabled) setViewDate(new Date(currentYear, currentMonth + 1, 1)); };
+
+  const checkOverlap = (startDate, endDate) => {
+    let current = new Date(startDate);
+    while (current <= endDate) {
+      if (currentBookedDates.includes(formatDate(current))) return true;
+      current.setDate(current.getDate() + 1);
+    }
+    return false;
+  };
+
+  const clearDates = () => {
+    setCheckIn(null);
+    setCheckOut(null);
+    setErrorMessage('');
+  };
+
+  let selectedDatesArray = [];
+  if (checkIn && checkOut) {
+    let curr = parseDate(checkIn);
+    const last = parseDate(checkOut);
+    while (curr <= last) {
+      selectedDatesArray.push(formatDate(curr));
+      curr.setDate(curr.getDate() + 1);
+    }
+  }
+
+  const handleDateClick = (day, isBooked, isPast) => {
+    if (isPast) return;
+    setErrorMessage('');
+
+    const clickedDateStr = formatDate(new Date(currentYear, currentMonth, day));
+    
+    if (selectedDatesArray.includes(clickedDateStr)) {
+      clearDates();
+      return;
+    }
+
+    const dClicked = parseDate(clickedDateStr);
+
+    if (checkIn) {
+      const dCheckIn = parseDate(checkIn);
+      if (dClicked > dCheckIn) {
+        const diffDays = Math.ceil(Math.abs(dClicked - dCheckIn) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays >= 2) {
+          if (checkOverlap(dCheckIn, dClicked)) {
+            setErrorMessage('Cannot extend to this date. It overlaps with an existing reservation.');
+            return;
+          }
+          setCheckOut(clickedDateStr);
+          return;
+        }
+      }
+    }
+
+    if (isBooked) {
+      setErrorMessage('This date is already booked.');
+      return;
+    }
+
+    const autoCheckOutDate = new Date(dClicked);
+    autoCheckOutDate.setDate(autoCheckOutDate.getDate() + 2);
+
+    if (checkOverlap(dClicked, autoCheckOutDate)) {
+      setErrorMessage('Cannot start here. The mandatory 2-night minimum stay overlaps with an existing reservation.');
+      return;
+    }
+
+    setCheckIn(clickedDateStr);
+    setCheckOut(formatDate(autoCheckOutDate));
+  };
+
+  const handleRoomChange = (roomId) => {
+    setSelectedRoom(roomId);
+    setCheckIn(null);
+    setCheckOut(null);
+    setErrorMessage('');
+    setShowForm(false);
+    setBookingStatus('');
+  };
+
+  const displayPrettyDate = (dateString) => {
+    if (!dateString) return '';
+    return parseDate(dateString).toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  let totalNights = 0;
+  if (checkIn && checkOut) {
+    totalNights = Math.ceil(Math.abs(parseDate(checkOut) - parseDate(checkIn)) / (1000 * 60 * 60 * 24));
+  }
+
+  const handleInputChange = (e) => {
+    setGuestInfo({ ...guestInfo, [e.target.name]: e.target.value });
+  };
+
+  const submitBooking = async (e) => {
+    e.preventDefault();
+    setBookingStatus('submitting');
+    
+    const bookingData = {
+      room: selectedRoom,
+      checkIn: checkIn,
+      checkOut: checkOut,
+      guest: guestInfo
+    };
+
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingData)
+      });
+
+      if (response.ok) {
+        setBookingStatus('success');
+      } else {
+        setBookingStatus('error');
+      }
+    } catch (error) {
+      console.error("Booking error:", error);
+      setBookingStatus('error');
+    }
+  };
+
   return (
-    <div style={{ padding: '40px 20px', maxWidth: '1100px', margin: '0 auto', fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
+    <div style={{ padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
       
-      <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-        <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Rooms, Rates & Packages</h1>
-        <p style={{ fontSize: '1.2rem', color: '#555', maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
-          Experience the comfort and tranquility of Cleghorn Canyon. All reservations require a 2-night minimum stay.
+      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Check Availability</h1>
+        
+        <p style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold' }}>
+          * All reservations require a minimum 2-night stay.
         </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '50px' }}>
-        {rooms.map((room) => (
-          <div key={room.id} style={{ display: 'flex', flexWrap: 'wrap', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-            
-            {/* The 2-Picture Side-by-Side Layout */}
-            <div style={{ flex: '1 1 400px', display: 'flex', gap: '2px', backgroundColor: '#eee', minHeight: '350px' }}>
-              {room.images.map((img, index) => (
-                <div 
-                  key={index} 
-                  onClick={() => setExpandedImg(img)} // NEW: Click to expand
-                  title="Click to expand"
-                  style={{ 
-                    flex: '1', 
-                    backgroundImage: `url(${img})`, 
-                    backgroundSize: 'cover', 
-                    backgroundPosition: 'center',
-                    cursor: 'zoom-in', // Shows magnifying glass
-                    transition: 'opacity 0.2s'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                  onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-                ></div>
-              ))}
-            </div>
-            
-            {/* Room Details Container */}
-            <div style={{ flex: '1 1 400px', padding: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-                <h2 style={{ fontSize: '2rem', color: '#2d4a22', margin: 0 }}>{room.name}</h2>
-                <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#555', backgroundColor: '#f4f7f6', padding: '8px 15px', borderRadius: '20px' }}>{room.rate}</span>
-              </div>
-              
-              <p style={{ fontSize: '1.1rem', color: '#666', lineHeight: '1.6', marginBottom: '20px' }}>{room.description}</p>
-              
-              <ul style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: 0, margin: '0 0 30px 0', listStyle: 'none' }}>
-                {room.features.map((feature, i) => (
-                  <li key={i} style={{ color: '#555', fontSize: '0.95rem' }}>✓ {feature}</li>
-                ))}
-              </ul>
-
-              <Link to="/availability" style={{ alignSelf: 'flex-start', backgroundColor: '#2d4a22', color: 'white', padding: '12px 25px', borderRadius: '4px', textDecoration: 'none', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                Check Availability
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* NEW: LIGHTBOX OVERLAY */}
-      {expandedImg && (
-        <div 
-          onClick={() => setExpandedImg(null)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-            zIndex: 9999,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            cursor: 'zoom-out'
-          }}
-        >
-          <button 
-            onClick={() => setExpandedImg(null)}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              right: '30px',
-              background: 'none',
-              border: 'none',
-              color: 'white',
-              fontSize: '3rem',
-              cursor: 'pointer',
-              textShadow: '0 2px 4px rgba(0,0,0,0.5)'
-            }}
-          >
-            &times;
-          </button>
-          <img 
-            src={expandedImg} 
-            alt="Expanded room view" 
-            style={{
-              maxWidth: '90%',
-              maxHeight: '90%',
-              borderRadius: '8px',
-              boxShadow: '0 5px 25px rgba(0,0,0,0.5)',
-              objectFit: 'contain'
-            }} 
-            onClick={(e) => e.stopPropagation()} // Prevents clicking the image itself from closing it
-          />
+      {!showForm && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '40px', flexWrap: 'wrap' }}>
+          {rooms.map(room => (
+            <button 
+              key={room.id}
+              onClick={() => handleRoomChange(room.id)}
+              style={{
+                padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', border: 'none', borderRadius: '8px', cursor: 'pointer',
+                backgroundColor: selectedRoom === room.id ? '#2d4a22' : '#e9ecef', color: selectedRoom === room.id ? 'white' : '#555',
+                boxShadow: selectedRoom === room.id ? '0 4px 10px rgba(45,74,34,0.3)' : 'none'
+              }}
+            >
+              {room.name}
+            </button>
+          ))}
         </div>
       )}
 
+      <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', maxWidth: '600px', margin: '0 auto' }}>
+        
+        {!showForm ? (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <button onClick={handlePrevMonth} disabled={isPrevDisabled} style={{ padding: '8px 15px', backgroundColor: isPrevDisabled ? '#eee' : '#2d4a22', color: isPrevDisabled ? '#aaa' : 'white', border: 'none', borderRadius: '4px', cursor: isPrevDisabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>&larr; Prev</button>
+              <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', margin: 0 }}>{monthName}</h2>
+              <button onClick={handleNextMonth} disabled={isNextDisabled} style={{ padding: '8px 15px', backgroundColor: isNextDisabled ? '#eee' : '#2d4a22', color: isNextDisabled ? '#aaa' : 'white', border: 'none', borderRadius: '4px', cursor: isNextDisabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>Next &rarr;</button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px', textAlign: 'center', fontWeight: 'bold', color: '#666', marginBottom: '15px' }}>
+              <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px' }}>
+              {emptyDays.map(step => <div key={`empty-${step}`} style={{ padding: '15px' }}></div>)}
+              {days.map(day => {
+                const dateStr = formatDate(new Date(currentYear, currentMonth, day));
+                const isBooked = currentBookedDates.includes(dateStr);
+                const isSelected = selectedDatesArray.includes(dateStr);
+                const isPast = new Date(currentYear, currentMonth, day, 23, 59, 59) < today;
+
+                let bgColor = '#e2e3e5';
+                let txtColor = '#333';
+                let cursorStyle = 'pointer';
+
+                if (isPast) { bgColor = '#f5f5f5'; txtColor = '#ccc'; cursorStyle = 'not-allowed'; }
+                else if (isSelected) { bgColor = '#2d4a22'; txtColor = 'white'; }
+                else if (isBooked) { bgColor = '#f8d7da'; txtColor = '#721c24'; cursorStyle = 'not-allowed'; }
+
+                return (
+                  <div key={day} onClick={() => handleDateClick(day, isBooked, isPast)}
+                    style={{
+                      padding: '15px 5px', textAlign: 'center', borderRadius: '6px', fontWeight: 'bold', cursor: cursorStyle,
+                      backgroundColor: bgColor, color: txtColor, textDecoration: (isBooked || isPast) ? 'line-through' : 'none',
+                      border: isSelected ? '2px solid #1a2e13' : '2px solid transparent', opacity: (isBooked || isPast) ? 0.6 : 1
+                    }}>
+                    {day}
+                  </div>
+                );
+              })}
+            </div>
+            
+            {errorMessage && ( <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#fff3cd', color: '#856404', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>{errorMessage}</div> )}
+
+            <div style={{ marginTop: '30px', textAlign: 'center', minHeight: '80px' }}>
+              
+              {!checkIn && <p style={{ fontSize: '1.1rem', color: '#666', fontStyle: 'italic' }}>Click your Check-In date. We will auto-select your 2-night minimum stay.</p>}
+              
+              {checkIn && checkOut && (
+                <div>
+                  <p style={{ fontSize: '1.2rem', color: '#2d4a22', fontWeight: 'bold', marginBottom: '15px' }}>{totalNights}-Night Stay Selected: <br/> {displayPrettyDate(checkIn)} – {displayPrettyDate(checkOut)}</p>
+                  
+                  <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button onClick={clearDates} style={{ backgroundColor: '#e2e3e5', color: '#333', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }}>
+                      Clear Dates
+                    </button>
+
+                    <button onClick={() => setShowForm(true)} style={{ backgroundColor: '#2d4a22', color: 'white', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
+                      Continue to Booking
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          
+          <div style={{ padding: '10px' }}>
+            <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', marginBottom: '10px', textAlign: 'center' }}>Complete Reservation</h2>
+            
+            <div style={{ backgroundColor: '#f4f7f6', padding: '15px', borderRadius: '8px', marginBottom: '25px' }}>
+              <p style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}><strong>Room:</strong> {rooms.find(r => r.id === selectedRoom).name}</p>
+              <p style={{ margin: '0', fontSize: '1.1rem' }}><strong>Dates:</strong> {displayPrettyDate(checkIn)} - {displayPrettyDate(checkOut)} ({totalNights} nights)</p>
+            </div>
+
+            {bookingStatus === 'success' ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🎉</div>
+                <h3 style={{ color: '#2d4a22', fontSize: '1.5rem' }}>Booking Request Sent!</h3>
+                <p style={{ color: '#555', fontSize: '1.1rem' }}>We will contact you shortly to confirm your reservation at Cleghorn Canyon.</p>
+                <button onClick={() => { setShowForm(false); setCheckIn(null); setCheckOut(null); setBookingStatus(''); }} style={{ marginTop: '20px', backgroundColor: '#2d4a22', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Book Another Room</button>
+              </div>
+            ) : (
+              <form onSubmit={submitBooking} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Full Name</label>
+                  <input type="text" name="name" required value={guestInfo.name} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="John Doe" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Email Address</label>
+                  <input type="email" name="email" required value={guestInfo.email} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="john@example.com" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Phone Number</label>
+                  <input type="tel" name="phone" required value={guestInfo.phone} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="(555) 123-4567" />
+                </div>
+
+                {bookingStatus === 'error' && (
+                  <p style={{ color: '#721c24', backgroundColor: '#f8d7da', padding: '10px', borderRadius: '4px', margin: 0 }}>There was an error connecting to the server. Please try again.</p>
+                )}
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                  <button type="button" onClick={() => setShowForm(false)} style={{ flex: '1', padding: '12px', backgroundColor: '#e2e3e5', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
+                    &larr; Back
+                  </button>
+                  <button type="submit" disabled={bookingStatus === 'submitting'} style={{ flex: '2', padding: '12px', backgroundColor: '#2d4a22', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: bookingStatus === 'submitting' ? 'wait' : 'pointer', fontSize: '1.1rem' }}>
+                    {bookingStatus === 'submitting' ? 'Sending...' : 'Confirm Reservation'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
 
-export default RoomsRates;
+export default BookingPage;
