@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function Home() {
+  // NEW: State to track which image is currently expanded
+  const [expandedImg, setExpandedImg] = useState(null);
+
   return (
     <div style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', paddingBottom: '60px' }}>
       
@@ -56,8 +59,22 @@ function Home() {
         {/* BOX 1: Meet Your Hosts */}
         <div style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
           
-          {/* 👉 UPDATED: Now pointing to your local hosts.jpg file */}
-          <div style={{ height: '220px', backgroundImage: 'url("/Host1.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#eee' }}></div>
+          {/* UPDATED: Added onClick, cursor styling, and hover effect for lightbox */}
+          <div 
+            onClick={() => setExpandedImg('/Host1.jpg')}
+            title="Click to expand"
+            style={{ 
+              height: '220px', 
+              backgroundImage: 'url("/Host1.jpg")', 
+              backgroundSize: 'cover', 
+              backgroundPosition: 'center', 
+              backgroundColor: '#eee',
+              cursor: 'zoom-in',
+              transition: 'opacity 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+          ></div>
           
           <div style={{ padding: '30px', flex: '1', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ fontSize: '1.6rem', color: '#2d4a22', marginBottom: '15px' }}>Meet Your Hosts</h3>
@@ -92,8 +109,22 @@ function Home() {
         {/* BOX 3: Nature at Your Door */}
         <div style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', textAlign: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
           
-          {/* 👉 UPDATED: Now pointing to your local nature.jpg file */}
-          <div style={{ height: '220px', backgroundImage: 'url("/Canyonkake.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#eee' }}></div>
+          {/* UPDATED: Added onClick, cursor styling, and hover effect for lightbox */}
+          <div 
+            onClick={() => setExpandedImg('/Canyonkake.jpg')}
+            title="Click to expand"
+            style={{ 
+              height: '220px', 
+              backgroundImage: 'url("/Canyonkake.jpg")', 
+              backgroundSize: 'cover', 
+              backgroundPosition: 'center', 
+              backgroundColor: '#eee',
+              cursor: 'zoom-in',
+              transition: 'opacity 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+          ></div>
           
           <div style={{ padding: '30px', flex: '1', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ fontSize: '1.6rem', color: '#2d4a22', marginBottom: '15px' }}>Nature at Your Door</h3>
@@ -104,6 +135,56 @@ function Home() {
         </div>
 
       </div>
+
+      {/* NEW: LIGHTBOX OVERLAY */}
+      {expandedImg && (
+        <div 
+          onClick={() => setExpandedImg(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            zIndex: 9999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'zoom-out'
+          }}
+        >
+          <button 
+            onClick={() => setExpandedImg(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '30px',
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '3rem',
+              cursor: 'pointer',
+              textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+            }}
+          >
+            &times;
+          </button>
+          <img 
+            src={expandedImg} 
+            alt="Expanded view" 
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              borderRadius: '8px',
+              boxShadow: '0 5px 25px rgba(0,0,0,0.5)',
+              objectFit: 'contain'
+            }} 
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
+
     </div>
   );
 }
