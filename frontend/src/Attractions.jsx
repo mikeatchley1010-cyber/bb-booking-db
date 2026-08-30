@@ -40,7 +40,7 @@ function Attractions() {
       distance: "10-minute drive",
       description: "Take a walking tour through historic downtown Rapid City and discover a series of life-size bronze statues of our nation's past presidents. It is a fantastic way to explore local shops, cafes, and galleries while enjoying a unique piece of American history.",
       // Using your local file
-      image: "/President.jpg"
+      image: "/president3.jpg"
     },
     {
       id: 6,
