@@ -1,11 +1,82 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
+// 👉 PASTE YOUR STRIPE PUBLISHABLE KEY HERE (starts with pk_test_...)
+const stripePromise = loadStripe('pk_test_51UAHYQC29RQhxkOLAeOU4BAkz2ICDMHrLrYaPuardevJD3v2hdsuGbXaw6EciEk9BYaq8TT3185z0JHUukJv0puF009uytCKN1');
+
+// --- THE SECURE STRIPE CHECKOUT FORM ---
+const CheckoutForm = ({ bookingData, onSuccess, onBack }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setIsProcessing(true);
+    setErrorMessage('');
+
+    // 1. Tell Stripe to process the card securely
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        // We handle the redirect manually so we can save to our database first
+      },
+      redirect: 'if_required' 
+    });
+
+    if (error) {
+      setErrorMessage(error.message);
+      setIsProcessing(false);
+    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+      // 2. If the card is approved, save the booking to your Render database!
+      try {
+        const response = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bookingData)
+        });
+
+        if (response.ok) {
+          onSuccess();
+        } else {
+          setErrorMessage("Payment successful, but there was an error saving the booking. Please contact us.");
+          setIsProcessing(false);
+        }
+      } catch (err) {
+        console.error("Booking save error:", err);
+        setErrorMessage("Network error saving booking.");
+        setIsProcessing(false);
+      }
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      <PaymentElement />
+      {errorMessage && <div style={{ color: '#721c24', backgroundColor: '#f8d7da', padding: '10px', borderRadius: '4px', marginTop: '10px', fontWeight: 'bold' }}>{errorMessage}</div>}
+      
+      <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+        <button type="button" onClick={onBack} disabled={isProcessing} style={{ flex: '1', padding: '12px', backgroundColor: '#e2e3e5', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
+          &larr; Back
+        </button>
+        <button type="submit" disabled={isProcessing || !stripe || !elements} style={{ flex: '2', padding: '12px', backgroundColor: '#2d4a22', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: isProcessing ? 'wait' : 'pointer', fontSize: '1.1rem' }}>
+          {isProcessing ? 'Processing Payment...' : 'Pay & Confirm Reservation'}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+
+// --- YOUR MAIN BOOKING PAGE ---
 function BookingPage() {
   const location = useLocation();
   
-  // 👉 NEW: This instantly reads the URL to see which room they clicked from the other page!
-  // If they didn't click a specific room, it defaults to the 'family' package.
   const [selectedRoom, setSelectedRoom] = useState(() => {
     const queryParams = new URLSearchParams(location.search);
     return queryParams.get('room') || 'family';
@@ -18,10 +89,45 @@ function BookingPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   const [showForm, setShowForm] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [clientSecret, setClientSecret] = useState('');
+  
   const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '' });
   const [bookingStatus, setBookingStatus] = useState('');
+  const [baseBookedDates, setBaseBookedDates] = useState({ buffalo: [], bighorn: [], deer: [] });
 
-  // This ensures that if they use the browser's "back" or "forward" buttons, the tab still updates
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const response = await fetch('/api/bookings'); 
+        if (response.ok) {
+          const data = await response.json();
+          const booked = { buffalo: [], bighorn: [], deer: [] };
+          
+          data.forEach(reservation => {
+            let curr = new Date(reservation.check_in);
+            curr.setMinutes(curr.getMinutes() + curr.getTimezoneOffset());
+            
+            let last = new Date(reservation.check_out);
+            last.setMinutes(last.getMinutes() + last.getTimezoneOffset());
+
+            while (curr < last) { 
+              const dateStr = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`;
+              if (reservation.room_name === 'buffalo') booked.buffalo.push(dateStr);
+              if (reservation.room_name === 'bighorn') booked.bighorn.push(dateStr);
+              if (reservation.room_name === 'deer') booked.deer.push(dateStr);
+              curr.setDate(curr.getDate() + 1);
+            }
+          });
+          setBaseBookedDates(booked);
+        }
+      } catch (error) {
+        console.error("Failed to fetch bookings:", error);
+      }
+    };
+    fetchBookings();
+  }, []);
+
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const roomFromUrl = queryParams.get('room');
@@ -33,7 +139,6 @@ function BookingPage() {
     }
   }, [location.search]);
 
-  // 👉 This matches your exact new order from the Rooms and Rates page
   const rooms = [
     { id: 'family', name: 'Ultimate Family Package (All Rooms)' },
     { id: 'combo-bd', name: 'Family Combo: BigHorn & Deer Run' },
@@ -41,8 +146,6 @@ function BookingPage() {
     { id: 'bighorn', name: 'BigHorn Lookout' },
     { id: 'deer', name: 'Deer Run' }
   ];
-
-  const baseBookedDates = { buffalo: [], bighorn: [], deer: [] };
 
   const getBookedForRoom = (roomId) => {
     if (roomId === 'buffalo') return baseBookedDates.buffalo;
@@ -54,7 +157,6 @@ function BookingPage() {
   };
 
   const currentBookedDates = getBookedForRoom(selectedRoom);
-
   const today = new Date();
   const formatDate = (dateObj) => `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
   const parseDate = (dateStr) => { const [y, m, d] = dateStr.split('-'); return new Date(y, m - 1, d); };
@@ -64,7 +166,6 @@ function BookingPage() {
   const monthName = viewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-
   const emptyDays = Array.from({ length: firstDayOfMonth }, (_, i) => i);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
@@ -105,7 +206,6 @@ function BookingPage() {
 
     const clickedDateStr = formatDate(new Date(currentYear, currentMonth, day));
     
-    // Click to clear feature
     if (selectedDatesArray.includes(clickedDateStr)) {
       clearDates();
       return;
@@ -118,7 +218,6 @@ function BookingPage() {
       if (dClicked > dCheckIn) {
         const diffDays = Math.ceil(Math.abs(dClicked - dCheckIn) / (1000 * 60 * 60 * 24));
         
-        // 2-night minimum logic
         if (diffDays >= 2) {
           if (checkOverlap(dCheckIn, dClicked)) {
             setErrorMessage('Cannot extend to this date. It overlaps with an existing reservation.');
@@ -153,6 +252,7 @@ function BookingPage() {
     setCheckOut(null);
     setErrorMessage('');
     setShowForm(false);
+    setShowPayment(false);
     setBookingStatus('');
   };
 
@@ -170,33 +270,35 @@ function BookingPage() {
     setGuestInfo({ ...guestInfo, [e.target.name]: e.target.value });
   };
 
-  const submitBooking = async (e) => {
+  const proceedToPayment = async (e) => {
     e.preventDefault();
     setBookingStatus('submitting');
     
-    const bookingData = {
-      room: selectedRoom,
-      checkIn: checkIn,
-      checkOut: checkOut,
-      guest: guestInfo
-    };
-
     try {
-      const response = await fetch('/api/bookings', {
+      const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookingData)
+        body: JSON.stringify({ room: selectedRoom, nights: totalNights })
       });
 
       if (response.ok) {
-        setBookingStatus('success');
+        const data = await response.json();
+        setClientSecret(data.clientSecret);
+        setShowPayment(true);
+        setBookingStatus('');
       } else {
         setBookingStatus('error');
       }
     } catch (error) {
-      console.error("Booking error:", error);
+      console.error("Payment Intent error:", error);
       setBookingStatus('error');
     }
+  };
+
+  const handleBookingSuccess = () => {
+    setBookingStatus('success');
+    setShowPayment(false);
+    setShowForm(false);
   };
 
   return (
@@ -204,13 +306,12 @@ function BookingPage() {
       
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Check Availability</h1>
-        
         <p style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold' }}>
           * All reservations require a minimum 2-night stay.
         </p>
       </div>
 
-      {!showForm && (
+      {!showForm && !showPayment && bookingStatus !== 'success' && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '40px', flexWrap: 'wrap' }}>
           {rooms.map(room => (
             <button 
@@ -230,7 +331,7 @@ function BookingPage() {
 
       <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', maxWidth: '600px', margin: '0 auto' }}>
         
-        {!showForm ? (
+        {!showForm && !showPayment && bookingStatus !== 'success' && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <button onClick={handlePrevMonth} disabled={isPrevDisabled} style={{ padding: '8px 15px', backgroundColor: isPrevDisabled ? '#eee' : '#2d4a22', color: isPrevDisabled ? '#aaa' : 'white', border: 'none', borderRadius: '4px', cursor: isPrevDisabled ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>&larr; Prev</button>
@@ -274,7 +375,6 @@ function BookingPage() {
             {errorMessage && ( <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#fff3cd', color: '#856404', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>{errorMessage}</div> )}
 
             <div style={{ marginTop: '30px', textAlign: 'center', minHeight: '80px' }}>
-              
               {!checkIn && <p style={{ fontSize: '1.1rem', color: '#666', fontStyle: 'italic' }}>Click your Check-In date. We will auto-select your 2-night minimum stay.</p>}
               
               {checkIn && checkOut && (
@@ -294,52 +394,72 @@ function BookingPage() {
               )}
             </div>
           </>
-        ) : (
-          
+        )}
+
+        {showForm && !showPayment && (
           <div style={{ padding: '10px' }}>
-            <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', marginBottom: '10px', textAlign: 'center' }}>Complete Reservation</h2>
+            <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', marginBottom: '10px', textAlign: 'center' }}>Guest Details</h2>
             
             <div style={{ backgroundColor: '#f4f7f6', padding: '15px', borderRadius: '8px', marginBottom: '25px' }}>
               <p style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}><strong>Room:</strong> {rooms.find(r => r.id === selectedRoom)?.name}</p>
               <p style={{ margin: '0', fontSize: '1.1rem' }}><strong>Dates:</strong> {displayPrettyDate(checkIn)} - {displayPrettyDate(checkOut)} ({totalNights} nights)</p>
             </div>
 
-            {bookingStatus === 'success' ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🎉</div>
-                <h3 style={{ color: '#2d4a22', fontSize: '1.5rem' }}>Booking Request Sent!</h3>
-                <p style={{ color: '#555', fontSize: '1.1rem' }}>We will contact you shortly to confirm your reservation at Cleghorn Canyon.</p>
-                <button onClick={() => { setShowForm(false); setCheckIn(null); setCheckOut(null); setBookingStatus(''); }} style={{ marginTop: '20px', backgroundColor: '#2d4a22', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Book Another Room</button>
+            <form onSubmit={proceedToPayment} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Full Name</label>
+                <input type="text" name="name" required value={guestInfo.name} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="John Doe" />
               </div>
-            ) : (
-              <form onSubmit={submitBooking} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Full Name</label>
-                  <input type="text" name="name" required value={guestInfo.name} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="John Doe" />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Email Address</label>
-                  <input type="email" name="email" required value={guestInfo.email} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="john@example.com" />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Phone Number</label>
-                  <input type="tel" name="phone" required value={guestInfo.phone} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="(555) 123-4567" />
-                </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Email Address</label>
+                <input type="email" name="email" required value={guestInfo.email} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="john@example.com" />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Phone Number</label>
+                <input type="tel" name="phone" required value={guestInfo.phone} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="(555) 123-4567" />
+              </div>
 
-                {bookingStatus === 'error' && (
-                  <p style={{ color: '#721c24', backgroundColor: '#f8d7da', padding: '10px', borderRadius: '4px', margin: 0 }}>There was an error connecting to the server. Please try again.</p>
-                )}
+              {bookingStatus === 'error' && (
+                <p style={{ color: '#721c24', backgroundColor: '#f8d7da', padding: '10px', borderRadius: '4px', margin: 0 }}>There was an error connecting to the server. Please try again.</p>
+              )}
 
-                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                  <button type="button" onClick={() => setShowForm(false)} style={{ flex: '1', padding: '12px', backgroundColor: '#e2e3e5', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
-                    &larr; Back
-                  </button>
-                  <button type="submit" disabled={bookingStatus === 'submitting'} style={{ flex: '2', padding: '12px', backgroundColor: '#2d4a22', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: bookingStatus === 'submitting' ? 'wait' : 'pointer', fontSize: '1.1rem' }}>
-                    {bookingStatus === 'submitting' ? 'Sending...' : 'Confirm Reservation'}
-                  </button>
-                </div>
-              </form>
-            )}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button type="button" onClick={() => setShowForm(false)} style={{ flex: '1', padding: '12px', backgroundColor: '#e2e3e5', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
+                  &larr; Back
+                </button>
+                <button type="submit" disabled={bookingStatus === 'submitting'} style={{ flex: '2', padding: '12px', backgroundColor: '#2d4a22', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: bookingStatus === 'submitting' ? 'wait' : 'pointer', fontSize: '1.1rem' }}>
+                  {bookingStatus === 'submitting' ? 'Loading...' : 'Continue to Payment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showPayment && clientSecret && (
+          <div style={{ padding: '10px' }}>
+            <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', marginBottom: '10px', textAlign: 'center' }}>Secure Checkout</h2>
+            <div style={{ backgroundColor: '#f4f7f6', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'center' }}>
+              <p style={{ margin: '0', fontSize: '1.2rem' }}><strong>Total:</strong> ${(rooms.find(r => r.id === selectedRoom)?.id === 'buffalo' || rooms.find(r => r.id === selectedRoom)?.id === 'bighorn' ? 175 : rooms.find(r => r.id === selectedRoom)?.id === 'combo-bd' ? 295 : rooms.find(r => r.id === selectedRoom)?.id === 'family' ? 395 : 150) * totalNights}.00</p>
+            </div>
+
+            <Elements stripe={stripePromise} options={{ clientSecret }}>
+              <CheckoutForm 
+                bookingData={{ room: selectedRoom, checkIn, checkOut, guest: guestInfo }}
+                onSuccess={handleBookingSuccess}
+                onBack={() => setShowPayment(false)}
+              />
+            </Elements>
+          </div>
+        )}
+
+        {bookingStatus === 'success' && (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🎉</div>
+            <h3 style={{ color: '#2d4a22', fontSize: '1.5rem' }}>Payment & Booking Confirmed!</h3>
+            <p style={{ color: '#555', fontSize: '1.1rem' }}>Thank you, {guestInfo.name}! Your reservation at Cleghorn Canyon is locked in.</p>
+            <button onClick={() => { setShowForm(false); setShowPayment(false); setCheckIn(null); setCheckOut(null); setBookingStatus(''); }} style={{ marginTop: '20px', backgroundColor: '#2d4a22', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 'bold' }}>
+              Book Another Room
+            </button>
           </div>
         )}
 

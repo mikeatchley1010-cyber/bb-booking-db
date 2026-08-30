@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+// NEW: Import Stripe and pass it your Secret Key from your Environment Variables
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); 
 
 const app = express();
 const PORT = process.env.PORT || 5000; 
@@ -11,12 +13,42 @@ app.use(express.json());
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false 
+  ssl: { rejectUnauthorized: false }
+});
+
+// NEW: We store the prices securely on the backend. (Stripe expects amounts in cents!)
+const ROOM_RATES = {
+  'buffalo': 17500, // $175.00
+  'bighorn': 17500, // $175.00
+  'deer': 15000,    // $150.00
+  'combo-bd': 29500,// $295.00
+  'family': 39500   // $395.00
+};
+
+// NEW: Stripe Payment Intent Route
+app.post('/api/create-payment-intent', async (req, res) => {
+  try {
+    const { room, nights } = req.body;
+    
+    // Calculate exact total safely on the server
+    const ratePerNight = ROOM_RATES[room];
+    const totalAmount = ratePerNight * nights;
+
+    // Tell Stripe how much we want to charge
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalAmount,
+      currency: 'usd',
+      automatic_payment_methods: { enabled: true },
+    });
+
+    // Send the secret handshake code back to the frontend
+    res.send({ clientSecret: paymentIntent.client_secret });
+  } catch (error) {
+    console.error("Stripe error:", error);
+    res.status(500).send({ error: error.message });
   }
 });
 
-// 0. The Database Upgrade Route (Run this once after deployment!)
 app.get('/api/setup-db', async (req, res) => {
   try {
     await pool.query(`
@@ -33,62 +65,49 @@ app.get('/api/setup-db', async (req, res) => {
   }
 });
 
-// 1. The receiving door (Saves new bookings & guest info)
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { 
-      guestName, 
-      guestEmail, 
-      guestPhone, 
-      guestCount, 
-      guestAges, 
-      roomName, 
-      checkIn, 
-      checkOut 
-    } = req.body;
+    const { room, checkIn, checkOut, guest } = req.body;
 
-    // STEP 1: Translate package choices into physical rooms
+    const guestName = guest?.name || 'Not Provided';
+    const guestEmail = guest?.email || 'Not Provided';
+    const guestPhone = guest?.phone || 'Not Provided';
+    const guestCount = 'Not Provided'; 
+    const guestAges = 'Not Provided';  
+
     let roomsToBook = [];
-    if (roomName === 'Family Package (BigHorn Lookout & Deer Run)') {
-      roomsToBook = ['BigHorn Lookout', 'Deer Run'];
-    } else if (roomName === 'The Full House Package (All 3 Rooms)') {
-      roomsToBook = ['Buffalo Ridge', 'BigHorn Lookout', 'Deer Run'];
+    if (room === 'family') {
+      roomsToBook = ['buffalo', 'bighorn', 'deer'];
+    } else if (room === 'combo-bd') {
+      roomsToBook = ['bighorn', 'deer'];
     } else {
-      roomsToBook = [roomName]; 
+      roomsToBook = [room]; 
     }
 
-    // STEP 2: Check for date overlaps in the database
-    for (const room of roomsToBook) {
+    for (const r of roomsToBook) {
       const overlapCheck = await pool.query(
-        `SELECT * FROM reservations 
-         WHERE room_name = $1 AND check_in < $3::DATE AND check_out > $2::DATE`,
-        [room, checkIn, checkOut]
+        `SELECT * FROM reservations WHERE room_name = $1 AND check_in < $3::DATE AND check_out > $2::DATE`,
+        [r, checkIn, checkOut]
       );
-
       if (overlapCheck.rows.length > 0) {
-        return res.status(400).json({ 
-          message: `Sorry! ${room} is already booked for those dates.` 
-        });
+        return res.status(400).json({ message: `Sorry! A room in this package is already booked for those dates.` });
       }
     }
 
-    // STEP 3: Save booking with complete guest & party details
-    for (const room of roomsToBook) {
+    for (const r of roomsToBook) {
       await pool.query(
-        `INSERT INTO reservations 
-         (guest_name, guest_email, guest_phone, guest_count, guest_ages, room_name, check_in, check_out) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [guestName, guestEmail, guestPhone, guestCount, guestAges, room, checkIn, checkOut]
+        `INSERT INTO reservations (guest_name, guest_email, guest_phone, guest_count, guest_ages, room_name, check_in, check_out) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [guestName, guestEmail, guestPhone, guestCount, guestAges, r, checkIn, checkOut]
       );
     }
 
     res.json({ message: "Booking saved successfully!" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to save booking" });
   }
 });
 
-// 2. The sending door (Reads saved bookings)
 app.get('/api/bookings', async (req, res) => {
   try {
     const allBookings = await pool.query("SELECT * FROM reservations ORDER BY check_in ASC");
@@ -98,7 +117,6 @@ app.get('/api/bookings', async (req, res) => {
   }
 });
 
-// 3. The exit door (Deletes a booking)
 app.delete('/api/bookings/:id', async (req, res) => {
   try {
     const { id } = req.params; 
@@ -109,10 +127,6 @@ app.delete('/api/bookings/:id', async (req, res) => {
   }
 });
 
-app.get('/api/test', (req, res) => {
-  res.json({ message: "Hello from your custom B&B backend!" });
-});
-
 app.listen(PORT, () => {
-  console.log(`Backend server is running on http://localhost:${PORT}`);
+  console.log(`Backend server is running on port ${PORT}`);
 });
