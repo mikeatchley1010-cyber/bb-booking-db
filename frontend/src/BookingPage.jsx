@@ -73,7 +73,6 @@ function BookingPage() {
       if (dClicked > dCheckIn) {
         const diffDays = Math.ceil(Math.abs(dClicked - dCheckIn) / (1000 * 60 * 60 * 24));
         
-        // 👉 UPDATED TO 2 NIGHTS HERE
         if (diffDays >= 2) {
           if (checkOverlap(dCheckIn, dClicked)) {
             setErrorMessage('Cannot extend to this date. It overlaps with an existing reservation.');
@@ -91,8 +90,6 @@ function BookingPage() {
     }
 
     const autoCheckOutDate = new Date(dClicked);
-    
-    // 👉 UPDATED TO 2 NIGHTS HERE (+2 days on the calendar)
     autoCheckOutDate.setDate(autoCheckOutDate.getDate() + 2);
 
     if (checkOverlap(dClicked, autoCheckOutDate)) {
@@ -111,6 +108,13 @@ function BookingPage() {
     setErrorMessage('');
     setShowForm(false);
     setBookingStatus('');
+  };
+
+  // NEW: Function to clear dates
+  const clearDates = () => {
+    setCheckIn(null);
+    setCheckOut(null);
+    setErrorMessage('');
   };
 
   const displayPrettyDate = (dateString) => {
@@ -172,7 +176,6 @@ function BookingPage() {
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Check Availability</h1>
         
-        {/* 👉 UPDATED TEXT TO 2 NIGHTS */}
         <p style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold' }}>
           * All reservations require a minimum 2-night stay.
         </p>
@@ -243,16 +246,23 @@ function BookingPage() {
 
             <div style={{ marginTop: '30px', textAlign: 'center', minHeight: '80px' }}>
               
-              {/* 👉 UPDATED TEXT TO 2 NIGHTS */}
               {!checkIn && <p style={{ fontSize: '1.1rem', color: '#666', fontStyle: 'italic' }}>Click your Check-In date. We will auto-select your 2-night minimum stay.</p>}
               
               {checkIn && checkOut && (
                 <div>
                   <p style={{ fontSize: '1.2rem', color: '#2d4a22', fontWeight: 'bold', marginBottom: '15px' }}>{totalNights}-Night Stay Selected: <br/> {displayPrettyDate(checkIn)} – {displayPrettyDate(checkOut)}</p>
                   
-                  <button onClick={() => setShowForm(true)} style={{ backgroundColor: '#2d4a22', color: 'white', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
-                    Continue to Booking
-                  </button>
+                  {/* 👉 NEW: CLEAR DATES BUTTON ADDED HERE */}
+                  <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button onClick={clearDates} style={{ backgroundColor: '#e2e3e5', color: '#333', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }}>
+                      Clear Dates
+                    </button>
+
+                    <button onClick={() => setShowForm(true)} style={{ backgroundColor: '#2d4a22', color: 'white', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
+                      Continue to Booking
+                    </button>
+                  </div>
+
                 </div>
               )}
             </div>
