@@ -54,7 +54,7 @@ function RoomsRates() {
       <div style={{ textAlign: 'center', marginBottom: '50px' }}>
         <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Rooms, Rates & Packages</h1>
         <p style={{ fontSize: '1.2rem', color: '#555', maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
-          Experience the comfort and tranquility of Cleghorn Canyon. All reservations require a 3-night minimum stay.
+          Experience the comfort and tranquility of Cleghorn Canyon. All reservations require a 2-night minimum stay.
         </p>
       </div>
 

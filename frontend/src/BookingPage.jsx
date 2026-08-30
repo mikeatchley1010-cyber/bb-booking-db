@@ -8,10 +8,9 @@ function BookingPage() {
   const [checkOut, setCheckOut] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // NEW: State for the booking form
   const [showForm, setShowForm] = useState(false);
   const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '' });
-  const [bookingStatus, setBookingStatus] = useState(''); // 'submitting', 'success', 'error'
+  const [bookingStatus, setBookingStatus] = useState('');
 
   const rooms = [
     { id: 'buffalo', name: 'Buffalo Ridge' },
@@ -73,7 +72,9 @@ function BookingPage() {
       const dCheckIn = parseDate(checkIn);
       if (dClicked > dCheckIn) {
         const diffDays = Math.ceil(Math.abs(dClicked - dCheckIn) / (1000 * 60 * 60 * 24));
-        if (diffDays >= 3) {
+        
+        // 👉 UPDATED TO 2 NIGHTS HERE
+        if (diffDays >= 2) {
           if (checkOverlap(dCheckIn, dClicked)) {
             setErrorMessage('Cannot extend to this date. It overlaps with an existing reservation.');
             return;
@@ -90,10 +91,12 @@ function BookingPage() {
     }
 
     const autoCheckOutDate = new Date(dClicked);
-    autoCheckOutDate.setDate(autoCheckOutDate.getDate() + 3);
+    
+    // 👉 UPDATED TO 2 NIGHTS HERE (+2 days on the calendar)
+    autoCheckOutDate.setDate(autoCheckOutDate.getDate() + 2);
 
     if (checkOverlap(dClicked, autoCheckOutDate)) {
-      setErrorMessage('Cannot start here. The mandatory 3-night minimum stay overlaps with an existing reservation.');
+      setErrorMessage('Cannot start here. The mandatory 2-night minimum stay overlaps with an existing reservation.');
       return;
     }
 
@@ -130,12 +133,10 @@ function BookingPage() {
     totalNights = Math.ceil(Math.abs(parseDate(checkOut) - parseDate(checkIn)) / (1000 * 60 * 60 * 24));
   }
 
-  // NEW: Handle Form Input
   const handleInputChange = (e) => {
     setGuestInfo({ ...guestInfo, [e.target.name]: e.target.value });
   };
 
-  // NEW: Submit the booking to your Express/PostgreSQL backend!
   const submitBooking = async (e) => {
     e.preventDefault();
     setBookingStatus('submitting');
@@ -148,7 +149,6 @@ function BookingPage() {
     };
 
     try {
-      // This sends the data to your Node/Express backend
       const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -171,9 +171,13 @@ function BookingPage() {
       
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Check Availability</h1>
+        
+        {/* 👉 UPDATED TEXT TO 2 NIGHTS */}
+        <p style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold' }}>
+          * All reservations require a minimum 2-night stay.
+        </p>
       </div>
 
-      {/* ROOM SELECTOR TABS */}
       {!showForm && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '40px', flexWrap: 'wrap' }}>
           {rooms.map(room => (
@@ -192,10 +196,8 @@ function BookingPage() {
         </div>
       )}
 
-      {/* CALENDAR OR FORM CONTAINER */}
       <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', maxWidth: '600px', margin: '0 auto' }}>
         
-        {/* VIEW 1: THE CALENDAR */}
         {!showForm ? (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -240,12 +242,14 @@ function BookingPage() {
             {errorMessage && ( <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#fff3cd', color: '#856404', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>{errorMessage}</div> )}
 
             <div style={{ marginTop: '30px', textAlign: 'center', minHeight: '80px' }}>
-              {!checkIn && <p style={{ fontSize: '1.1rem', color: '#666', fontStyle: 'italic' }}>Click your Check-In date. We will auto-select your 3-night minimum stay.</p>}
+              
+              {/* 👉 UPDATED TEXT TO 2 NIGHTS */}
+              {!checkIn && <p style={{ fontSize: '1.1rem', color: '#666', fontStyle: 'italic' }}>Click your Check-In date. We will auto-select your 2-night minimum stay.</p>}
+              
               {checkIn && checkOut && (
                 <div>
                   <p style={{ fontSize: '1.2rem', color: '#2d4a22', fontWeight: 'bold', marginBottom: '15px' }}>{totalNights}-Night Stay Selected: <br/> {displayPrettyDate(checkIn)} – {displayPrettyDate(checkOut)}</p>
                   
-                  {/* THIS IS THE BUTTON WE FIXED! It now flips the view to the form */}
                   <button onClick={() => setShowForm(true)} style={{ backgroundColor: '#2d4a22', color: 'white', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
                     Continue to Booking
                   </button>
@@ -255,7 +259,6 @@ function BookingPage() {
           </>
         ) : (
           
-          /* VIEW 2: THE BOOKING FORM */
           <div style={{ padding: '10px' }}>
             <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', marginBottom: '10px', textAlign: 'center' }}>Complete Reservation</h2>
             
