@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 function Attractions() {
+  // NEW: State to track which image is currently expanded
+  const [expandedImg, setExpandedImg] = useState(null);
+
   const attractions = [
     {
       id: 1,
       name: "Mount Rushmore National Memorial",
       distance: "30-minute drive",
       description: "No trip to the Black Hills is complete without a visit to this iconic American monument. Majestic figures of George Washington, Thomas Jefferson, Theodore Roosevelt, and Abraham Lincoln are carved directly into the granite face of Mount Rushmore, representing 150 years of American history.",
-      // Using your local file
       image: "/Ruesmore1.jpg"
     },
     {
@@ -15,7 +17,6 @@ function Attractions() {
       name: "Badlands National Park",
       distance: "60-minute drive",
       description: "Experience the striking geologic deposits and rugged beauty of the Badlands. This incredible landscape features layered rock formations, steep canyons, and towering spires. Keep an eye out for bighorn sheep, bison, and prairie dogs as you drive the scenic loop or hike the trails.",
-      // Using your local file
       image: "/Badlands3.jpg"
     },
     {
@@ -23,7 +24,6 @@ function Attractions() {
       name: "Custer State Park",
       distance: "40-minute drive",
       description: "Famous for its stunning scenic drives—including the Needles Highway and Wildlife Loop Road—Custer State Park is a nature lover's paradise. It is home to clear mountain waters, soaring granite peaks, and one of the nation's largest free-roaming bison herds.",
-      // Using your local file
       image: "/Buffalo1.jpg"
     },
     {
@@ -31,7 +31,6 @@ function Attractions() {
       name: "Crazy Horse Memorial",
       distance: "45-minute drive",
       description: "Witness history in the making at the world's largest mountain carving in progress. Dedicated to protecting and preserving the culture, tradition, and living heritage of North American Indians, this massive monument honoring the Oglala Lakota warrior is a breathtaking sight.",
-      // Using your local file
       image: "/crazyhorse.jpg"
     },
     {
@@ -39,7 +38,6 @@ function Attractions() {
       name: "City of Presidents (Downtown Rapid City)",
       distance: "10-minute drive",
       description: "Take a walking tour through historic downtown Rapid City and discover a series of life-size bronze statues of our nation's past presidents. It is a fantastic way to explore local shops, cafes, and galleries while enjoying a unique piece of American history.",
-      // Using your local file
       image: "/president3.jpg"
     },
     {
@@ -47,7 +45,6 @@ function Attractions() {
       name: "Canyon Lake Park",
       distance: "5-minute drive",
       description: "Just minutes from our front door, Canyon Lake Park offers a beautiful, peaceful setting right in the city. Enjoy fishing, paddle boating, or simply walking along the shaded paths surrounding the water. It is the perfect spot for a relaxed afternoon picnic.",
-      // Using your local file
       image: "/Canyonkake.jpg"
     }
   ];
@@ -66,14 +63,22 @@ function Attractions() {
         {attractions.map(attraction => (
           <div key={attraction.id} style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column' }}>
             
-            {/* Attraction Image */}
-            <div style={{ 
-              height: '250px', 
-              backgroundImage: `url(${attraction.image})`, 
-              backgroundSize: 'cover', 
-              backgroundPosition: 'center',
-              backgroundColor: '#eee' 
-            }}></div>
+            {/* Attraction Image - NEW: Added onClick and zoom-in cursor */}
+            <div 
+              onClick={() => setExpandedImg(attraction.image)}
+              title="Click to expand"
+              style={{ 
+                height: '250px', 
+                backgroundImage: `url(${attraction.image})`, 
+                backgroundSize: 'cover', 
+                backgroundPosition: 'center',
+                backgroundColor: '#eee',
+                cursor: 'zoom-in',
+                transition: 'opacity 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+            ></div>
             
             {/* Attraction Details */}
             <div style={{ padding: '30px', flex: '1', display: 'flex', flexDirection: 'column' }}>
@@ -92,6 +97,55 @@ function Attractions() {
           </div>
         ))}
       </div>
+
+      {/* NEW: LIGHTBOX OVERLAY */}
+      {expandedImg && (
+        <div 
+          onClick={() => setExpandedImg(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            zIndex: 9999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'zoom-out'
+          }}
+        >
+          <button 
+            onClick={() => setExpandedImg(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '30px',
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '3rem',
+              cursor: 'pointer',
+              textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+            }}
+          >
+            &times;
+          </button>
+          <img 
+            src={expandedImg} 
+            alt="Expanded view" 
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              borderRadius: '8px',
+              boxShadow: '0 5px 25px rgba(0,0,0,0.5)',
+              objectFit: 'contain'
+            }} 
+            onClick={(e) => e.stopPropagation()} // Prevents clicking the image itself from closing it
+          />
+        </div>
+      )}
 
     </div>
   );
