@@ -35,7 +35,7 @@ const CheckoutForm = ({ bookingData, onSuccess, onBack }) => {
     } else if (paymentIntent && paymentIntent.status === 'succeeded') {
       // 2. If the card is approved, save the booking to your Render database!
       try {
-        const response = await fetch('/api/bookings', {
+        const response = await fetch('/api/https://bb-booking-db-1.onrender.com', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(bookingData)
@@ -99,7 +99,7 @@ function BookingPage() {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const response = await fetch('/api/bookings'); 
+        const response = await fetch('/api/https://bb-booking-db-1.onrender.com'); 
         if (response.ok) {
           const data = await response.json();
           const booked = { buffalo: [], bighorn: [], deer: [] };
@@ -275,7 +275,7 @@ function BookingPage() {
     setBookingStatus('submitting');
     
     try {
-      const response = await fetch('/api/create-payment-intent', {
+      const response = await fetch('/api/https://bb-booking-db-1.onrender.com', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ room: selectedRoom, nights: totalNights })
