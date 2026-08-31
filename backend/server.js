@@ -3,7 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); 
-const nodemailer = require('nodemailer'); // 👉 NEW: The mail carrier
+const nodemailer = require('nodemailer'); 
+
+// 👉 NEW: Force Render to use standard IPv4 internet (Fixes the ENETUNREACH error!)
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 const PORT = process.env.PORT || 5000; 
@@ -16,7 +20,6 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// 👉 NEW: Setting up the secure login to your Gmail
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -111,7 +114,7 @@ app.post('/api/bookings', async (req, res) => {
       );
     }
 
-    // 👉 NEW: Send the automated emails!
+    // 👉 Send the automated emails!
     if (guestEmail !== 'Not Provided') {
       // 1. Send receipt to the Guest
       await transporter.sendMail({
