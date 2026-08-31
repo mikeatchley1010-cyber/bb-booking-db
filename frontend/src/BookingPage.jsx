@@ -3,10 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-// 👉 Your Stripe Publishable Key
 const stripePromise = loadStripe('pk_test_51UAHYQC29RQhxkOLAeOU4BAkz2ICDMHrLrYaPuardevJD3v2hdsuGbXaw6EciEk9BYaq8TT3185z0JHUukJv0puF009uytCKN1');
 
-// --- THE SECURE STRIPE CHECKOUT FORM ---
 const CheckoutForm = ({ bookingData, onSuccess, onBack }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -20,12 +18,9 @@ const CheckoutForm = ({ bookingData, onSuccess, onBack }) => {
     setIsProcessing(true);
     setErrorMessage('');
 
-    // 1. Tell Stripe to process the card securely
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
-      confirmParams: {
-        // We handle the redirect manually so we can save to our database first
-      },
+      confirmParams: {},
       redirect: 'if_required' 
     });
 
@@ -33,7 +28,6 @@ const CheckoutForm = ({ bookingData, onSuccess, onBack }) => {
       setErrorMessage(error.message);
       setIsProcessing(false);
     } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-      // 2. If the card is approved, save the booking to your Render database!
       try {
         const response = await fetch('https://bb-booking-db-1.onrender.com/api/bookings', {
           method: 'POST',
@@ -73,7 +67,6 @@ const CheckoutForm = ({ bookingData, onSuccess, onBack }) => {
 };
 
 
-// --- YOUR MAIN BOOKING PAGE ---
 function BookingPage() {
   const location = useLocation();
   
@@ -83,7 +76,6 @@ function BookingPage() {
   });
 
   const [viewDate, setViewDate] = useState(new Date()); 
-  
   const [checkIn, setCheckIn] = useState(null);
   const [checkOut, setCheckOut] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -92,7 +84,8 @@ function BookingPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [clientSecret, setClientSecret] = useState('');
   
-  const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '' });
+  // 👉 NEW: Added adults and kids to the state with default values
+  const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', adults: '1', kids: '0' });
   const [bookingStatus, setBookingStatus] = useState('');
   const [baseBookedDates, setBaseBookedDates] = useState({ buffalo: [], bighorn: [], deer: [] });
 
@@ -419,6 +412,22 @@ function BookingPage() {
                 <input type="tel" name="phone" required value={guestInfo.phone} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="(555) 123-4567" />
               </div>
 
+              {/* 👉 NEW: Adults and Kids Dropdowns */}
+              <div style={{ display: 'flex', gap: '15px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Adults</label>
+                  <select name="adults" value={guestInfo.adults} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', backgroundColor: 'white' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => <option key={num} value={num}>{num}</option>)}
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Kids (Under 12)</label>
+                  <select name="kids" value={guestInfo.kids} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', backgroundColor: 'white' }}>
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => <option key={num} value={num}>{num}</option>)}
+                  </select>
+                </div>
+              </div>
+
               {bookingStatus === 'error' && (
                 <p style={{ color: '#721c24', backgroundColor: '#f8d7da', padding: '10px', borderRadius: '4px', margin: 0 }}>There was an error connecting to the server. Please try again.</p>
               )}
@@ -443,8 +452,18 @@ function BookingPage() {
             </div>
 
             <Elements stripe={stripePromise} options={{ clientSecret }}>
+              {/* 👉 NEW: We package up the counts into readable text for the database */}
               <CheckoutForm 
-                bookingData={{ room: selectedRoom, checkIn, checkOut, guest: guestInfo }}
+                bookingData={{ 
+                  room: selectedRoom, 
+                  checkIn, 
+                  checkOut, 
+                  guest: { 
+                    ...guestInfo,
+                    guestCount: `${Number(guestInfo.adults) + Number(guestInfo.kids)}`,
+                    guestAges: `${guestInfo.adults} Adults, ${guestInfo.kids} Kids (Under 12)`
+                  } 
+                }}
                 onSuccess={handleBookingSuccess}
                 onBack={() => setShowPayment(false)}
               />
