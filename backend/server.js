@@ -5,7 +5,7 @@ const { Pool } = require('pg');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); 
 const nodemailer = require('nodemailer'); 
 
-// 👉 NEW: Force Render to use standard IPv4 internet (Fixes the ENETUNREACH error!)
+// 👉 Force Render to use standard IPv4 internet (Fixes the ENETUNREACH error!)
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 
@@ -108,6 +108,7 @@ app.post('/api/bookings', async (req, res) => {
       }
     }
 
+    // 1. Save the booking to the database FIRST
     for (const r of roomsToBook) {
       await pool.query(
         `INSERT INTO reservations (guest_name, guest_email, guest_phone, guest_count, guest_ages, room_name, check_in, check_out) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -115,54 +116,61 @@ app.post('/api/bookings', async (req, res) => {
       );
     }
 
-    // 👉 Send the automated emails!
-    if (guestEmail !== 'Not Provided') {
-      // 1. Send receipt to the Guest
-      await transporter.sendMail({
-        from: `"Cleghorn Canyon B&B" <${process.env.EMAIL_USER}>`,
-        to: guestEmail,
-        subject: 'Reservation Confirmed - Cleghorn Canyon B&B',
-        html: `
-          <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #2d4a22;">Thank you for booking with us, ${guestName}!</h2>
-            <p>Your reservation is officially confirmed. We are so excited to host you at Cleghorn Canyon!</p>
-            <div style="background-color: #f4f7f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #2d4a22;">Booking Details:</h3>
-              <p><strong>Room:</strong> ${prettyRoomName}</p>
-              <p><strong>Check-in:</strong> ${checkIn}</p>
-              <p><strong>Check-out:</strong> ${checkOut}</p>
-              <p><strong>Guests:</strong> ${guestAges}</p>
+    // 2. 👉 NEW: Wrap the email sending in a try/catch block to bypass Render's firewall!
+    try {
+      if (guestEmail !== 'Not Provided') {
+        // Send receipt to the Guest
+        await transporter.sendMail({
+          from: `"Cleghorn Canyon B&B" <${process.env.EMAIL_USER}>`,
+          to: guestEmail,
+          subject: 'Reservation Confirmed - Cleghorn Canyon B&B',
+          html: `
+            <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2d4a22;">Thank you for booking with us, ${guestName}!</h2>
+              <p>Your reservation is officially confirmed. We are so excited to host you at Cleghorn Canyon!</p>
+              <div style="background-color: #f4f7f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #2d4a22;">Booking Details:</h3>
+                <p><strong>Room:</strong> ${prettyRoomName}</p>
+                <p><strong>Check-in:</strong> ${checkIn}</p>
+                <p><strong>Check-out:</strong> ${checkOut}</p>
+                <p><strong>Guests:</strong> ${guestAges}</p>
+              </div>
+              <p>If you have any questions or special requests before your stay, please reply to this email.</p>
+              <br/>
+              <p>Warmly,</p>
+              <p><strong>Cleghorn Canyon Bed and Breakfast</strong></p>
             </div>
-            <p>If you have any questions or special requests before your stay, please reply to this email.</p>
-            <br/>
-            <p>Warmly,</p>
-            <p><strong>Cleghorn Canyon Bed and Breakfast</strong></p>
-          </div>
+          `
+        });
+      }
+
+      // Send notification to You
+      await transporter.sendMail({
+        from: `"Website Bookings" <${process.env.EMAIL_USER}>`,
+        to: process.env.EMAIL_USER, 
+        subject: `🎉 New Booking! ${prettyRoomName} (${checkIn})`,
+        html: `
+          <h2>New Reservation Alert!</h2>
+          <p>A new booking has been paid for and confirmed on the website.</p>
+          <ul>
+            <li><strong>Guest Name:</strong> ${guestName}</li>
+            <li><strong>Email:</strong> ${guestEmail}</li>
+            <li><strong>Phone:</strong> ${guestPhone}</li>
+            <li><strong>Room:</strong> ${prettyRoomName}</li>
+            <li><strong>Dates:</strong> ${checkIn} to ${checkOut}</li>
+            <li><strong>Party:</strong> ${guestAges}</li>
+          </ul>
+          <p>This reservation has automatically been added to your Admin Dashboard calendar.</p>
         `
       });
+    } catch (emailError) {
+      // If Render blocks the email, we log it here but we DO NOT crash the server!
+      console.error("Booking saved, but email blocked by Render firewall:", emailError.message);
     }
 
-    // 2. Send notification to You
-    await transporter.sendMail({
-      from: `"Website Bookings" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER, 
-      subject: `🎉 New Booking! ${prettyRoomName} (${checkIn})`,
-      html: `
-        <h2>New Reservation Alert!</h2>
-        <p>A new booking has been paid for and confirmed on the website.</p>
-        <ul>
-          <li><strong>Guest Name:</strong> ${guestName}</li>
-          <li><strong>Email:</strong> ${guestEmail}</li>
-          <li><strong>Phone:</strong> ${guestPhone}</li>
-          <li><strong>Room:</strong> ${prettyRoomName}</li>
-          <li><strong>Dates:</strong> ${checkIn} to ${checkOut}</li>
-          <li><strong>Party:</strong> ${guestAges}</li>
-        </ul>
-        <p>This reservation has automatically been added to your Admin Dashboard calendar.</p>
-      `
-    });
+    // 3. Always send the Success message back to the website so the guest sees the celebration screen!
+    res.json({ message: "Booking saved successfully!" });
 
-    res.json({ message: "Booking saved and emails sent successfully!" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to save booking" });
