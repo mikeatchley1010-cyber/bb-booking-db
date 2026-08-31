@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-// 👉 PASTE YOUR STRIPE PUBLISHABLE KEY HERE (starts with pk_test_...)
+// 👉 Your Stripe Publishable Key
 const stripePromise = loadStripe('pk_test_51UAHYQC29RQhxkOLAeOU4BAkz2ICDMHrLrYaPuardevJD3v2hdsuGbXaw6EciEk9BYaq8TT3185z0JHUukJv0puF009uytCKN1');
 
 // --- THE SECURE STRIPE CHECKOUT FORM ---
@@ -35,7 +35,7 @@ const CheckoutForm = ({ bookingData, onSuccess, onBack }) => {
     } else if (paymentIntent && paymentIntent.status === 'succeeded') {
       // 2. If the card is approved, save the booking to your Render database!
       try {
-        const response = await fetch('/api/https://bb-booking-db-1.onrender.com', {
+        const response = await fetch('https://bb-booking-db-1.onrender.com/api/bookings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(bookingData)
@@ -99,7 +99,7 @@ function BookingPage() {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const response = await fetch('/api/https://bb-booking-db-1.onrender.com'); 
+        const response = await fetch('https://bb-booking-db-1.onrender.com/api/bookings'); 
         if (response.ok) {
           const data = await response.json();
           const booked = { buffalo: [], bighorn: [], deer: [] };
@@ -275,7 +275,7 @@ function BookingPage() {
     setBookingStatus('submitting');
     
     try {
-      const response = await fetch('/api/https://bb-booking-db-1.onrender.com', {
+      const response = await fetch('https://bb-booking-db-1.onrender.com/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ room: selectedRoom, nights: totalNights })
