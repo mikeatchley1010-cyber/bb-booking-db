@@ -2,8 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
-// NEW: Import Stripe and pass it your Secret Key from your Environment Variables
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); 
+const nodemailer = require('nodemailer'); // 👉 NEW: The mail carrier
 
 const app = express();
 const PORT = process.env.PORT || 5000; 
@@ -16,32 +16,35 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// NEW: We store the prices securely on the backend. (Stripe expects amounts in cents!)
+// 👉 NEW: Setting up the secure login to your Gmail
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
 const ROOM_RATES = {
-  'buffalo': 17500, // $175.00
-  'bighorn': 17500, // $175.00
-  'deer': 15000,    // $150.00
-  'combo-bd': 29500,// $295.00
-  'family': 39500   // $395.00
+  'buffalo': 17500,
+  'bighorn': 17500,
+  'deer': 15000,   
+  'combo-bd': 29500,
+  'family': 39500   
 };
 
-// NEW: Stripe Payment Intent Route
 app.post('/api/create-payment-intent', async (req, res) => {
   try {
     const { room, nights } = req.body;
-    
-    // Calculate exact total safely on the server
     const ratePerNight = ROOM_RATES[room];
     const totalAmount = ratePerNight * nights;
 
-    // Tell Stripe how much we want to charge
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount,
       currency: 'usd',
       automatic_payment_methods: { enabled: true },
     });
 
-    // Send the secret handshake code back to the frontend
     res.send({ clientSecret: paymentIntent.client_secret });
   } catch (error) {
     console.error("Stripe error:", error);
@@ -72,16 +75,21 @@ app.post('/api/bookings', async (req, res) => {
     const guestName = guest?.name || 'Not Provided';
     const guestEmail = guest?.email || 'Not Provided';
     const guestPhone = guest?.phone || 'Not Provided';
-    const guestCount = 'Not Provided'; 
-    const guestAges = 'Not Provided';  
+    const guestCount = guest?.guestCount || 'Not Provided'; 
+    const guestAges = guest?.guestAges || 'Not Provided';  
 
     let roomsToBook = [];
+    let prettyRoomName = '';
+    
     if (room === 'family') {
       roomsToBook = ['buffalo', 'bighorn', 'deer'];
+      prettyRoomName = 'Ultimate Family Package';
     } else if (room === 'combo-bd') {
       roomsToBook = ['bighorn', 'deer'];
+      prettyRoomName = 'Family Combo: BigHorn & Deer Run';
     } else {
       roomsToBook = [room]; 
+      prettyRoomName = room === 'buffalo' ? 'Buffalo Ridge' : room === 'bighorn' ? 'BigHorn Lookout' : 'Deer Run';
     }
 
     for (const r of roomsToBook) {
@@ -101,7 +109,54 @@ app.post('/api/bookings', async (req, res) => {
       );
     }
 
-    res.json({ message: "Booking saved successfully!" });
+    // 👉 NEW: Send the automated emails!
+    if (guestEmail !== 'Not Provided') {
+      // 1. Send receipt to the Guest
+      await transporter.sendMail({
+        from: `"Cleghorn Canyon B&B" <${process.env.EMAIL_USER}>`,
+        to: guestEmail,
+        subject: 'Reservation Confirmed - Cleghorn Canyon B&B',
+        html: `
+          <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2d4a22;">Thank you for booking with us, ${guestName}!</h2>
+            <p>Your reservation is officially confirmed. We are so excited to host you at Cleghorn Canyon!</p>
+            <div style="background-color: #f4f7f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #2d4a22;">Booking Details:</h3>
+              <p><strong>Room:</strong> ${prettyRoomName}</p>
+              <p><strong>Check-in:</strong> ${checkIn}</p>
+              <p><strong>Check-out:</strong> ${checkOut}</p>
+              <p><strong>Guests:</strong> ${guestAges}</p>
+            </div>
+            <p>If you have any questions or special requests before your stay, please reply to this email.</p>
+            <br/>
+            <p>Warmly,</p>
+            <p><strong>Cleghorn Canyon Bed and Breakfast</strong></p>
+          </div>
+        `
+      });
+    }
+
+    // 2. Send notification to You
+    await transporter.sendMail({
+      from: `"Website Bookings" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER, 
+      subject: `🎉 New Booking! ${prettyRoomName} (${checkIn})`,
+      html: `
+        <h2>New Reservation Alert!</h2>
+        <p>A new booking has been paid for and confirmed on the website.</p>
+        <ul>
+          <li><strong>Guest Name:</strong> ${guestName}</li>
+          <li><strong>Email:</strong> ${guestEmail}</li>
+          <li><strong>Phone:</strong> ${guestPhone}</li>
+          <li><strong>Room:</strong> ${prettyRoomName}</li>
+          <li><strong>Dates:</strong> ${checkIn} to ${checkOut}</li>
+          <li><strong>Party:</strong> ${guestAges}</li>
+        </ul>
+        <p>This reservation has automatically been added to your Admin Dashboard calendar.</p>
+      `
+    });
+
+    res.json({ message: "Booking saved and emails sent successfully!" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to save booking" });
