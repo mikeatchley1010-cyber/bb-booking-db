@@ -110,6 +110,7 @@ app.post('/api/bookings', async (req, res) => {
     const amountRemaining = totalCost / 2;
 
     // 3. Send the receipt via EmailJS
+// 2. 👉 NEW: Trigger the EmailJS API to send the receipt!
     try {
       if (guestEmail !== 'Not Provided') {
         const emailData = {
@@ -130,6 +131,26 @@ app.post('/api/bookings', async (req, res) => {
           }
         };
 
+        console.log("Attempting to send email via EmailJS...");
+        
+        // Wait for EmailJS to respond
+        const emailResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(emailData)
+        });
+
+        // If EmailJS rejects it, tell us exactly why!
+        if (!emailResponse.ok) {
+          const errorText = await emailResponse.text();
+          console.error("EmailJS Rejected the email. Reason:", errorText);
+        } else {
+          console.log("EmailJS successfully sent the receipt!");
+        }
+      }
+    } catch (emailError) {
+      console.error("Email API failed completely:", emailError.message);
+    }
         await fetch('https://api.emailjs.com/api/v1.0/email/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
