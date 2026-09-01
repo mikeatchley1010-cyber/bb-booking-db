@@ -89,15 +89,39 @@ function AdminPage() {
   // --- Main Dashboard ---
   return (
     <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Admin Dashboard</h1>
-        <button 
-          onClick={() => setIsAuthenticated(false)}
-          style={{ background: 'transparent', border: '1px solid #333', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
-        >
-          Log Out
-        </button>
+      
+      {/* 👉 NEW: Header area with Logout AND Stripe button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+        <h1 style={{ margin: 0 }}>Admin Dashboard</h1>
+        
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <a 
+            href="https://dashboard.stripe.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{
+              backgroundColor: '#635bff',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '4px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              boxShadow: '0 2px 4px rgba(99, 91, 255, 0.3)'
+            }}
+          >
+            Stripe Dashboard &rarr;
+          </a>
+
+          <button 
+            onClick={() => setIsAuthenticated(false)}
+            style={{ background: 'transparent', border: '1px solid #333', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            Log Out
+          </button>
+        </div>
       </div>
+      
       <p>Manage and review your incoming reservations.</p>
       
       {statusMessage && <p style={{ fontWeight: 'bold', color: '#007bff' }}>{statusMessage}</p>}
