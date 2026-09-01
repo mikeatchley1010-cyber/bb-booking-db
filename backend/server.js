@@ -25,17 +25,20 @@ const ROOM_RATES = {
 
 app.post('/api/create-payment-intent', async (req, res) => {
   try {
-    const { room, nights } = req.body;
-    const ratePerNight = ROOM_RATES[room];
-    const totalAmount = ratePerNight * nights;
+    const { room, nights, promoCode } = req.body;
+    let totalAmount = ROOM_RATES[room] * nights;
     
-    // 👉 Charge only 50% for the deposit!
+    if (promoCode === 'FAMILY50') {
+      totalAmount = Math.round(totalAmount * 0.5); 
+    } else if (promoCode === 'FAMILY25') {
+      totalAmount = Math.round(totalAmount * 0.75); 
+    }
+
     const depositAmount = Math.round(totalAmount / 2);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: depositAmount,
       currency: 'usd',
-      // 👉 NEW: This forces a clean, standard credit card box and kills the "Link" popup!
       payment_method_types: ['card'],
     });
 
@@ -64,7 +67,7 @@ app.get('/api/setup-db', async (req, res) => {
 
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { room, checkIn, checkOut, nights, guest } = req.body;
+    const { room, checkIn, checkOut, nights, guest, promoCode } = req.body;
 
     const guestName = guest?.name || 'Not Provided';
     const guestEmail = guest?.email || 'Not Provided';
@@ -96,7 +99,6 @@ app.post('/api/bookings', async (req, res) => {
       }
     }
 
-    // 1. Save the booking
     for (const r of roomsToBook) {
       await pool.query(
         `INSERT INTO reservations (guest_name, guest_email, guest_phone, guest_count, guest_ages, room_name, check_in, check_out) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -104,13 +106,17 @@ app.post('/api/bookings', async (req, res) => {
       );
     }
 
-    // 2. Calculate the exact dollar amounts for the receipt
-    const ratePerNight = ROOM_RATES[room] / 100;
-    const totalCost = ratePerNight * nights;
+    let totalCost = (ROOM_RATES[room] / 100) * nights;
+    
+    if (promoCode === 'FAMILY50') {
+      totalCost = totalCost * 0.5;
+    } else if (promoCode === 'FAMILY25') {
+      totalCost = totalCost * 0.75;
+    }
+
     const amountPaid = totalCost / 2;
     const amountRemaining = totalCost / 2;
 
-    // 3. Send the receipt via EmailJS with full Error Logging
     try {
       if (guestEmail !== 'Not Provided') {
         const emailData = {
@@ -131,8 +137,6 @@ app.post('/api/bookings', async (req, res) => {
           }
         };
 
-        console.log("Attempting to send email via EmailJS...");
-
         const emailResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -140,14 +144,11 @@ app.post('/api/bookings', async (req, res) => {
         });
 
         if (!emailResponse.ok) {
-          const errorText = await emailResponse.text();
-          console.error("EmailJS Rejected the email. Reason:", errorText);
-        } else {
-          console.log("EmailJS successfully sent the receipt!");
+          console.error("EmailJS Rejected:", await emailResponse.text());
         }
       }
     } catch (emailError) {
-      console.error("Email API failed completely:", emailError.message);
+      console.error("Email API failed:", emailError.message);
     }
 
     res.json({ message: "Booking saved successfully!" });
@@ -155,6 +156,49 @@ app.post('/api/bookings', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to save booking" });
+  }
+});
+
+// 👉 NEW: Send Balance Reminder Endpoint
+app.post('/api/remind', async (req, res) => {
+  try {
+    const { guestEmail, guestName, roomName, checkIn, dueDate, amountDue } = req.body;
+
+    if (!process.env.EMAILJS_REMINDER_TEMPLATE_ID) {
+      return res.status(500).json({ message: "Server missing Reminder Template ID!" });
+    }
+
+    const emailData = {
+      service_id: process.env.EMAILJS_SERVICE_ID,
+      template_id: process.env.EMAILJS_REMINDER_TEMPLATE_ID,
+      user_id: process.env.EMAILJS_PUBLIC_KEY,
+      accessToken: process.env.EMAILJS_PRIVATE_KEY,
+      template_params: {
+        guest_email: guestEmail,
+        guest_name: guestName,
+        room_name: roomName,
+        check_in: checkIn,
+        due_date: dueDate,
+        amount_due: amountDue
+      }
+    };
+
+    const emailResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(emailData)
+    });
+
+    if (!emailResponse.ok) {
+      const errText = await emailResponse.text();
+      console.error("EmailJS Reminder Error:", errText);
+      return res.status(500).json({ message: "EmailJS failed to send." });
+    }
+
+    res.json({ message: "Reminder sent successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error sending reminder." });
   }
 });
 
