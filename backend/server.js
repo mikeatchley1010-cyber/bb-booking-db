@@ -35,7 +35,8 @@ app.post('/api/create-payment-intent', async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: depositAmount,
       currency: 'usd',
-      automatic_payment_methods: { enabled: true },
+      // 👉 NEW: This forces a clean, standard credit card box and kills the "Link" popup!
+      payment_method_types: ['card'],
     });
 
     res.send({ clientSecret: paymentIntent.client_secret });
