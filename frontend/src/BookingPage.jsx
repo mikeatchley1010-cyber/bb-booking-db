@@ -59,7 +59,7 @@ const CheckoutForm = ({ bookingData, onSuccess, onBack }) => {
           &larr; Back
         </button>
         <button type="submit" disabled={isProcessing || !stripe || !elements} style={{ flex: '2', padding: '12px', backgroundColor: '#2d4a22', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: isProcessing ? 'wait' : 'pointer', fontSize: '1.1rem' }}>
-          {isProcessing ? 'Processing Payment...' : 'Pay & Confirm Reservation'}
+          {isProcessing ? 'Processing Payment...' : 'Pay 50% Deposit Now'}
         </button>
       </div>
     </form>
@@ -84,7 +84,6 @@ function BookingPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [clientSecret, setClientSecret] = useState('');
   
-  // 👉 NEW: Added adults and kids to the state with default values
   const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', adults: '1', kids: '0' });
   const [bookingStatus, setBookingStatus] = useState('');
   const [baseBookedDates, setBaseBookedDates] = useState({ buffalo: [], bighorn: [], deer: [] });
@@ -294,6 +293,12 @@ function BookingPage() {
     setShowForm(false);
   };
 
+  // 👉 NEW: Doing the math for the checkout screen!
+  const baseRate = rooms.find(r => r.id === selectedRoom)?.id === 'buffalo' || rooms.find(r => r.id === selectedRoom)?.id === 'bighorn' ? 175 : rooms.find(r => r.id === selectedRoom)?.id === 'combo-bd' ? 295 : rooms.find(r => r.id === selectedRoom)?.id === 'family' ? 395 : 150;
+  const fullTotal = baseRate * totalNights;
+  const depositAmount = fullTotal / 2;
+  const remainingAmount = fullTotal / 2;
+
   return (
     <div style={{ padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
       
@@ -412,7 +417,6 @@ function BookingPage() {
                 <input type="tel" name="phone" required value={guestInfo.phone} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="(555) 123-4567" />
               </div>
 
-              {/* 👉 NEW: Adults and Kids Dropdowns */}
               <div style={{ display: 'flex', gap: '15px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Adults</label>
@@ -447,17 +451,21 @@ function BookingPage() {
         {showPayment && clientSecret && (
           <div style={{ padding: '10px' }}>
             <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', marginBottom: '10px', textAlign: 'center' }}>Secure Checkout</h2>
+            
+            {/* 👉 NEW: Clear payment breakdown for the guest! */}
             <div style={{ backgroundColor: '#f4f7f6', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'center' }}>
-              <p style={{ margin: '0', fontSize: '1.2rem' }}><strong>Total:</strong> ${(rooms.find(r => r.id === selectedRoom)?.id === 'buffalo' || rooms.find(r => r.id === selectedRoom)?.id === 'bighorn' ? 175 : rooms.find(r => r.id === selectedRoom)?.id === 'combo-bd' ? 295 : rooms.find(r => r.id === selectedRoom)?.id === 'family' ? 395 : 150) * totalNights}.00</p>
+              <p style={{ margin: '0 0 5px 0', fontSize: '1.1rem', color: '#555' }}><strong>Total Stay:</strong> ${fullTotal.toFixed(2)}</p>
+              <p style={{ margin: '0 0 5px 0', fontSize: '1.4rem', color: '#2d4a22' }}><strong>50% Deposit Due Now:</strong> ${depositAmount.toFixed(2)}</p>
+              <p style={{ margin: '0', fontSize: '0.9rem', color: '#777' }}><strong>Remaining Balance:</strong> ${remainingAmount.toFixed(2)} (Due 7 days before check-in)</p>
             </div>
 
             <Elements stripe={stripePromise} options={{ clientSecret }}>
-              {/* 👉 NEW: We package up the counts into readable text for the database */}
               <CheckoutForm 
                 bookingData={{ 
                   room: selectedRoom, 
                   checkIn, 
-                  checkOut, 
+                  checkOut,
+                  nights: totalNights, 
                   guest: { 
                     ...guestInfo,
                     guestCount: `${Number(guestInfo.adults) + Number(guestInfo.kids)}`,
@@ -476,6 +484,7 @@ function BookingPage() {
             <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🎉</div>
             <h3 style={{ color: '#2d4a22', fontSize: '1.5rem' }}>Payment & Booking Confirmed!</h3>
             <p style={{ color: '#555', fontSize: '1.1rem' }}>Thank you, {guestInfo.name}! Your reservation at Cleghorn Canyon is locked in.</p>
+            <p style={{ color: '#777', fontSize: '0.9rem', fontStyle: 'italic' }}>We just emailed a receipt to {guestInfo.email}.</p>
             <button onClick={() => { setShowForm(false); setShowPayment(false); setCheckIn(null); setCheckOut(null); setBookingStatus(''); }} style={{ marginTop: '20px', backgroundColor: '#2d4a22', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 'bold' }}>
               Book Another Room
             </button>

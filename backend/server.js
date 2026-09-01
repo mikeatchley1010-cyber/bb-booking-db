@@ -28,9 +28,12 @@ app.post('/api/create-payment-intent', async (req, res) => {
     const { room, nights } = req.body;
     const ratePerNight = ROOM_RATES[room];
     const totalAmount = ratePerNight * nights;
+    
+    // 👉 Charge only 50% for the deposit!
+    const depositAmount = Math.round(totalAmount / 2);
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalAmount,
+      amount: depositAmount,
       currency: 'usd',
       automatic_payment_methods: { enabled: true },
     });
@@ -60,7 +63,7 @@ app.get('/api/setup-db', async (req, res) => {
 
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { room, checkIn, checkOut, guest } = req.body;
+    const { room, checkIn, checkOut, nights, guest } = req.body;
 
     const guestName = guest?.name || 'Not Provided';
     const guestEmail = guest?.email || 'Not Provided';
@@ -69,13 +72,17 @@ app.post('/api/bookings', async (req, res) => {
     const guestAges = guest?.guestAges || 'Not Provided';  
 
     let roomsToBook = [];
+    let prettyRoomName = '';
     
     if (room === 'family') {
       roomsToBook = ['buffalo', 'bighorn', 'deer'];
+      prettyRoomName = 'Ultimate Family Package';
     } else if (room === 'combo-bd') {
       roomsToBook = ['bighorn', 'deer'];
+      prettyRoomName = 'Family Combo: BigHorn & Deer Run';
     } else {
       roomsToBook = [room]; 
+      prettyRoomName = room === 'buffalo' ? 'Buffalo Ridge' : room === 'bighorn' ? 'BigHorn Lookout' : 'Deer Run';
     }
 
     for (const r of roomsToBook) {
@@ -88,7 +95,7 @@ app.post('/api/bookings', async (req, res) => {
       }
     }
 
-    // Save the booking to the database
+    // 1. Save the booking
     for (const r of roomsToBook) {
       await pool.query(
         `INSERT INTO reservations (guest_name, guest_email, guest_phone, guest_count, guest_ages, room_name, check_in, check_out) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -96,7 +103,43 @@ app.post('/api/bookings', async (req, res) => {
       );
     }
 
-    // Instantly return the Success message back to the website
+    // 👉 2. Calculate the exact dollar amounts for the receipt
+    const ratePerNight = ROOM_RATES[room] / 100;
+    const totalCost = ratePerNight * nights;
+    const amountPaid = totalCost / 2;
+    const amountRemaining = totalCost / 2;
+
+    // 3. Send the receipt via EmailJS
+    try {
+      if (guestEmail !== 'Not Provided') {
+        const emailData = {
+          service_id: process.env.EMAILJS_SERVICE_ID,
+          template_id: process.env.EMAILJS_TEMPLATE_ID,
+          user_id: process.env.EMAILJS_PUBLIC_KEY,
+          accessToken: process.env.EMAILJS_PRIVATE_KEY,
+          template_params: {
+            guest_email: guestEmail,
+            guest_name: guestName,
+            room_name: prettyRoomName,
+            check_in: checkIn,
+            check_out: checkOut,
+            guest_ages: guestAges,
+            total_cost: `$${totalCost.toFixed(2)}`,
+            amount_paid: `$${amountPaid.toFixed(2)}`,
+            amount_remaining: `$${amountRemaining.toFixed(2)}`
+          }
+        };
+
+        await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(emailData)
+        });
+      }
+    } catch (emailError) {
+      console.error("Email API failed:", emailError.message);
+    }
+
     res.json({ message: "Booking saved successfully!" });
 
   } catch (err) {
