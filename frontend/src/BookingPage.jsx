@@ -85,6 +85,10 @@ function BookingPage() {
   const [clientSecret, setClientSecret] = useState('');
   
   const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', adults: '1', kids: '0', promoCode: '' });
+  
+  // 👉 NEW: State for the policy checkbox
+  const [policyAgreed, setPolicyAgreed] = useState(false);
+  
   const [bookingStatus, setBookingStatus] = useState('');
   const [baseBookedDates, setBaseBookedDates] = useState({ buffalo: [], bighorn: [], deer: [] });
 
@@ -227,6 +231,7 @@ function BookingPage() {
     setShowForm(false);
     setShowPayment(false);
     setBookingStatus('');
+    setPolicyAgreed(false); // Reset checkbox on room change
   };
 
   const displayPrettyDate = (dateString) => {
@@ -270,7 +275,6 @@ function BookingPage() {
     }
   };
 
-  // 👉 NEW: Dynamic Discount Math!
   const baseRate = rooms.find(r => r.id === selectedRoom)?.id === 'buffalo' || rooms.find(r => r.id === selectedRoom)?.id === 'bighorn' ? 175 : rooms.find(r => r.id === selectedRoom)?.id === 'combo-bd' ? 295 : rooms.find(r => r.id === selectedRoom)?.id === 'family' ? 395 : 150;
   
   let fullTotal = baseRate * totalNights;
@@ -314,6 +318,7 @@ function BookingPage() {
 
       <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', maxWidth: '600px', margin: '0 auto' }}>
         
+        {/* Calendar Code (Hidden for brevity during form filling) */}
         {!showForm && !showPayment && bookingStatus !== 'success' && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -385,19 +390,39 @@ function BookingPage() {
 
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Promo Code (Optional)</label>
-                <input 
-                  type="text" 
-                  name="promoCode" 
-                  value={guestInfo.promoCode} 
-                  onChange={handleInputChange} 
-                  style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} 
-                  placeholder="Enter code if you have one" 
-                />
+                <input type="text" name="promoCode" value={guestInfo.promoCode} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="Enter code if you have one" />
+              </div>
+
+              {/* 👉 NEW: Mandatory Policy Checkbox */}
+              <div style={{ backgroundColor: '#fff3cd', border: '1px solid #ffeeba', padding: '15px', borderRadius: '6px', marginTop: '10px' }}>
+                <label style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox" 
+                    required 
+                    checked={policyAgreed} 
+                    onChange={(e) => setPolicyAgreed(e.target.checked)}
+                    style={{ marginTop: '4px', width: '20px', height: '20px', cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: '0.95rem', color: '#856404', lineHeight: '1.4' }}>
+                    <strong>Cancellation & Payment Policy:</strong> I understand I have 24 hours to cancel for a full refund. After 24 hours, the 50% deposit becomes non-refundable. The remaining total amount is due 7 days before check-in or the reservation will be canceled.
+                  </span>
+                </label>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button type="button" onClick={() => setShowForm(false)} style={{ flex: '1', padding: '12px', backgroundColor: '#e2e3e5', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>&larr; Back</button>
-                <button type="submit" disabled={bookingStatus === 'submitting'} style={{ flex: '2', padding: '12px', backgroundColor: '#2d4a22', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: bookingStatus === 'submitting' ? 'wait' : 'pointer', fontSize: '1.1rem' }}>Continue to Payment</button>
+                <button 
+                  type="submit" 
+                  disabled={bookingStatus === 'submitting' || !policyAgreed} 
+                  style={{ 
+                    flex: '2', padding: '12px', backgroundColor: policyAgreed ? '#2d4a22' : '#88a87d', 
+                    color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', 
+                    cursor: (!policyAgreed || bookingStatus === 'submitting') ? 'not-allowed' : 'pointer', 
+                    fontSize: '1.1rem', transition: 'background-color 0.3s' 
+                  }}
+                >
+                  Continue to Payment
+                </button>
               </div>
             </form>
           </div>
@@ -408,7 +433,6 @@ function BookingPage() {
             <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', marginBottom: '10px', textAlign: 'center' }}>Secure Checkout</h2>
             
             <div style={{ backgroundColor: '#f4f7f6', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'center' }}>
-              {/* 👉 NEW: This banner updates based on which code they used! */}
               {isDiscounted && <p style={{ color: '#2d4a22', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '10px' }}>{discountMessage}</p>}
               
               <p style={{ margin: '0 0 5px 0', fontSize: '1.1rem', color: '#555', textDecoration: isDiscounted ? 'line-through' : 'none' }}><strong>Total Stay:</strong> ${(baseRate * totalNights).toFixed(2)}</p>
