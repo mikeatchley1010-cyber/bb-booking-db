@@ -38,11 +38,11 @@ const CheckoutForm = ({ bookingData, onSuccess, onBack }) => {
         if (response.ok) {
           onSuccess();
         } else {
-          setErrorMessage("Payment successful, but there was an error saving the booking. Please contact us.");
+          setErrorMessage("Payment successful, but there was an error saving the booking.");
           setIsProcessing(false);
         }
       } catch (err) {
-        console.error("Booking save error:", err);
+        console.error("Booking error:", err);
         setErrorMessage("Network error saving booking.");
         setIsProcessing(false);
       }
@@ -59,7 +59,7 @@ const CheckoutForm = ({ bookingData, onSuccess, onBack }) => {
           &larr; Back
         </button>
         <button type="submit" disabled={isProcessing || !stripe || !elements} style={{ flex: '2', padding: '12px', backgroundColor: '#2d4a22', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: isProcessing ? 'wait' : 'pointer', fontSize: '1.1rem' }}>
-          {isProcessing ? 'Processing Payment...' : 'Pay 50% Deposit Now'}
+          {isProcessing ? 'Processing Payment...' : 'Pay Deposit Now'}
         </button>
       </div>
     </form>
@@ -84,7 +84,7 @@ function BookingPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [clientSecret, setClientSecret] = useState('');
   
-  const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', adults: '1', kids: '0' });
+  const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', adults: '1', kids: '0', promoCode: '' });
   const [bookingStatus, setBookingStatus] = useState('');
   const [baseBookedDates, setBaseBookedDates] = useState({ buffalo: [], bighorn: [], deer: [] });
 
@@ -120,19 +120,8 @@ function BookingPage() {
     fetchBookings();
   }, []);
 
-  useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const roomFromUrl = queryParams.get('room');
-    if (roomFromUrl) {
-      setSelectedRoom(roomFromUrl);
-      setCheckIn(null);
-      setCheckOut(null);
-      setErrorMessage('');
-    }
-  }, [location.search]);
-
   const rooms = [
-    { id: 'family', name: 'Ultimate Family Package (All Rooms)' },
+    { id: 'family', name: 'Ultimate Family Package' },
     { id: 'combo-bd', name: 'Family Combo: BigHorn & Deer Run' },
     { id: 'buffalo', name: 'Buffalo Ridge' },
     { id: 'bighorn', name: 'BigHorn Lookout' },
@@ -176,11 +165,7 @@ function BookingPage() {
     return false;
   };
 
-  const clearDates = () => {
-    setCheckIn(null);
-    setCheckOut(null);
-    setErrorMessage('');
-  };
+  const clearDates = () => { setCheckIn(null); setCheckOut(null); setErrorMessage(''); };
 
   let selectedDatesArray = [];
   if (checkIn && checkOut) {
@@ -209,10 +194,9 @@ function BookingPage() {
       const dCheckIn = parseDate(checkIn);
       if (dClicked > dCheckIn) {
         const diffDays = Math.ceil(Math.abs(dClicked - dCheckIn) / (1000 * 60 * 60 * 24));
-        
         if (diffDays >= 2) {
           if (checkOverlap(dCheckIn, dClicked)) {
-            setErrorMessage('Cannot extend to this date. It overlaps with an existing reservation.');
+            setErrorMessage('Cannot extend to this date. Overlaps with an existing reservation.');
             return;
           }
           setCheckOut(clickedDateStr);
@@ -221,16 +205,13 @@ function BookingPage() {
       }
     }
 
-    if (isBooked) {
-      setErrorMessage('This date is already booked.');
-      return;
-    }
+    if (isBooked) { setErrorMessage('This date is already booked.'); return; }
 
     const autoCheckOutDate = new Date(dClicked);
     autoCheckOutDate.setDate(autoCheckOutDate.getDate() + 2);
 
     if (checkOverlap(dClicked, autoCheckOutDate)) {
-      setErrorMessage('Cannot start here. The mandatory 2-night minimum stay overlaps with an existing reservation.');
+      setErrorMessage('Cannot start here. Mandatory 2-night minimum overlaps with existing booking.');
       return;
     }
 
@@ -262,6 +243,8 @@ function BookingPage() {
     setGuestInfo({ ...guestInfo, [e.target.name]: e.target.value });
   };
 
+  const finalPromoCode = guestInfo.promoCode.toUpperCase().trim();
+
   const proceedToPayment = async (e) => {
     e.preventDefault();
     setBookingStatus('submitting');
@@ -270,7 +253,7 @@ function BookingPage() {
       const response = await fetch('https://bb-booking-db-1.onrender.com/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ room: selectedRoom, nights: totalNights })
+        body: JSON.stringify({ room: selectedRoom, nights: totalNights, promoCode: finalPromoCode })
       });
 
       if (response.ok) {
@@ -282,20 +265,28 @@ function BookingPage() {
         setBookingStatus('error');
       }
     } catch (error) {
-      console.error("Payment Intent error:", error);
+      console.error("Payment error:", error);
       setBookingStatus('error');
     }
   };
 
-  const handleBookingSuccess = () => {
-    setBookingStatus('success');
-    setShowPayment(false);
-    setShowForm(false);
-  };
-
-  // 👉 NEW: Doing the math for the checkout screen!
+  // 👉 NEW: Dynamic Discount Math!
   const baseRate = rooms.find(r => r.id === selectedRoom)?.id === 'buffalo' || rooms.find(r => r.id === selectedRoom)?.id === 'bighorn' ? 175 : rooms.find(r => r.id === selectedRoom)?.id === 'combo-bd' ? 295 : rooms.find(r => r.id === selectedRoom)?.id === 'family' ? 395 : 150;
-  const fullTotal = baseRate * totalNights;
+  
+  let fullTotal = baseRate * totalNights;
+  let isDiscounted = false;
+  let discountMessage = '';
+
+  if (finalPromoCode === 'FAMILY50') {
+    fullTotal = fullTotal * 0.5;
+    isDiscounted = true;
+    discountMessage = '🎉 50% Family Discount Applied!';
+  } else if (finalPromoCode === 'FAMILY25') {
+    fullTotal = fullTotal * 0.75;
+    isDiscounted = true;
+    discountMessage = '🎉 25% Family Discount Applied!';
+  }
+
   const depositAmount = fullTotal / 2;
   const remainingAmount = fullTotal / 2;
 
@@ -304,9 +295,7 @@ function BookingPage() {
       
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Check Availability</h1>
-        <p style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold' }}>
-          * All reservations require a minimum 2-night stay.
-        </p>
+        <p style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold' }}>* All reservations require a minimum 2-night stay.</p>
       </div>
 
       {!showForm && !showPayment && bookingStatus !== 'success' && (
@@ -315,11 +304,7 @@ function BookingPage() {
             <button 
               key={room.id}
               onClick={() => handleRoomChange(room.id)}
-              style={{
-                padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', border: 'none', borderRadius: '8px', cursor: 'pointer',
-                backgroundColor: selectedRoom === room.id ? '#2d4a22' : '#e9ecef', color: selectedRoom === room.id ? 'white' : '#555',
-                boxShadow: selectedRoom === room.id ? '0 4px 10px rgba(45,74,34,0.3)' : 'none'
-              }}
+              style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', border: 'none', borderRadius: '8px', cursor: 'pointer', backgroundColor: selectedRoom === room.id ? '#2d4a22' : '#e9ecef', color: selectedRoom === room.id ? 'white' : '#555', boxShadow: selectedRoom === room.id ? '0 4px 10px rgba(45,74,34,0.3)' : 'none' }}
             >
               {room.name}
             </button>
@@ -358,12 +343,7 @@ function BookingPage() {
                 else if (isBooked) { bgColor = '#f8d7da'; txtColor = '#721c24'; cursorStyle = 'not-allowed'; }
 
                 return (
-                  <div key={day} onClick={() => handleDateClick(day, isBooked, isPast)}
-                    style={{
-                      padding: '15px 5px', textAlign: 'center', borderRadius: '6px', fontWeight: 'bold', cursor: cursorStyle,
-                      backgroundColor: bgColor, color: txtColor, textDecoration: (isBooked || isPast) ? 'line-through' : 'none',
-                      border: isSelected ? '2px solid #1a2e13' : '2px solid transparent', opacity: (isBooked || isPast) ? 0.6 : 1
-                    }}>
+                  <div key={day} onClick={() => handleDateClick(day, isBooked, isPast)} style={{ padding: '15px 5px', textAlign: 'center', borderRadius: '6px', fontWeight: 'bold', cursor: cursorStyle, backgroundColor: bgColor, color: txtColor, textDecoration: (isBooked || isPast) ? 'line-through' : 'none', border: isSelected ? '2px solid #1a2e13' : '2px solid transparent', opacity: (isBooked || isPast) ? 0.6 : 1 }}>
                     {day}
                   </div>
                 );
@@ -380,13 +360,8 @@ function BookingPage() {
                   <p style={{ fontSize: '1.2rem', color: '#2d4a22', fontWeight: 'bold', marginBottom: '15px' }}>{totalNights}-Night Stay Selected: <br/> {displayPrettyDate(checkIn)} – {displayPrettyDate(checkOut)}</p>
                   
                   <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <button onClick={clearDates} style={{ backgroundColor: '#e2e3e5', color: '#333', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }}>
-                      Clear Dates
-                    </button>
-
-                    <button onClick={() => setShowForm(true)} style={{ backgroundColor: '#2d4a22', color: 'white', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
-                      Continue to Booking
-                    </button>
+                    <button onClick={clearDates} style={{ backgroundColor: '#e2e3e5', color: '#333', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer' }}>Clear Dates</button>
+                    <button onClick={() => setShowForm(true)} style={{ backgroundColor: '#2d4a22', color: 'white', padding: '12px 25px', border: 'none', borderRadius: '4px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer' }}>Continue to Booking</button>
                   </div>
                 </div>
               )}
@@ -398,51 +373,31 @@ function BookingPage() {
           <div style={{ padding: '10px' }}>
             <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', marginBottom: '10px', textAlign: 'center' }}>Guest Details</h2>
             
-            <div style={{ backgroundColor: '#f4f7f6', padding: '15px', borderRadius: '8px', marginBottom: '25px' }}>
-              <p style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}><strong>Room:</strong> {rooms.find(r => r.id === selectedRoom)?.name}</p>
-              <p style={{ margin: '0', fontSize: '1.1rem' }}><strong>Dates:</strong> {displayPrettyDate(checkIn)} - {displayPrettyDate(checkOut)} ({totalNights} nights)</p>
-            </div>
-
             <form onSubmit={proceedToPayment} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Full Name</label>
-                <input type="text" name="name" required value={guestInfo.name} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="John Doe" />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Email Address</label>
-                <input type="email" name="email" required value={guestInfo.email} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="john@example.com" />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Phone Number</label>
-                <input type="tel" name="phone" required value={guestInfo.phone} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="(555) 123-4567" />
-              </div>
+              <div><label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Full Name</label><input type="text" name="name" required value={guestInfo.name} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} /></div>
+              <div><label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Email Address</label><input type="email" name="email" required value={guestInfo.email} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} /></div>
+              <div><label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Phone Number</label><input type="tel" name="phone" required value={guestInfo.phone} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} /></div>
 
               <div style={{ display: 'flex', gap: '15px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Adults</label>
-                  <select name="adults" value={guestInfo.adults} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', backgroundColor: 'white' }}>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => <option key={num} value={num}>{num}</option>)}
-                  </select>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Kids (Under 12)</label>
-                  <select name="kids" value={guestInfo.kids} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', backgroundColor: 'white' }}>
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => <option key={num} value={num}>{num}</option>)}
-                  </select>
-                </div>
+                <div style={{ flex: 1 }}><label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Adults</label><select name="adults" value={guestInfo.adults} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', backgroundColor: 'white' }}>{[1, 2, 3, 4, 5, 6].map(num => <option key={num} value={num}>{num}</option>)}</select></div>
+                <div style={{ flex: 1 }}><label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Kids</label><select name="kids" value={guestInfo.kids} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', backgroundColor: 'white' }}>{[0, 1, 2, 3, 4, 5].map(num => <option key={num} value={num}>{num}</option>)}</select></div>
               </div>
 
-              {bookingStatus === 'error' && (
-                <p style={{ color: '#721c24', backgroundColor: '#f8d7da', padding: '10px', borderRadius: '4px', margin: 0 }}>There was an error connecting to the server. Please try again.</p>
-              )}
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#555' }}>Promo Code (Optional)</label>
+                <input 
+                  type="text" 
+                  name="promoCode" 
+                  value={guestInfo.promoCode} 
+                  onChange={handleInputChange} 
+                  style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} 
+                  placeholder="Enter code if you have one" 
+                />
+              </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <button type="button" onClick={() => setShowForm(false)} style={{ flex: '1', padding: '12px', backgroundColor: '#e2e3e5', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>
-                  &larr; Back
-                </button>
-                <button type="submit" disabled={bookingStatus === 'submitting'} style={{ flex: '2', padding: '12px', backgroundColor: '#2d4a22', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: bookingStatus === 'submitting' ? 'wait' : 'pointer', fontSize: '1.1rem' }}>
-                  {bookingStatus === 'submitting' ? 'Loading...' : 'Continue to Payment'}
-                </button>
+                <button type="button" onClick={() => setShowForm(false)} style={{ flex: '1', padding: '12px', backgroundColor: '#e2e3e5', color: '#333', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}>&larr; Back</button>
+                <button type="submit" disabled={bookingStatus === 'submitting'} style={{ flex: '2', padding: '12px', backgroundColor: '#2d4a22', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: bookingStatus === 'submitting' ? 'wait' : 'pointer', fontSize: '1.1rem' }}>Continue to Payment</button>
               </div>
             </form>
           </div>
@@ -452,10 +407,14 @@ function BookingPage() {
           <div style={{ padding: '10px' }}>
             <h2 style={{ color: '#2d4a22', fontSize: '1.8rem', marginBottom: '10px', textAlign: 'center' }}>Secure Checkout</h2>
             
-            {/* 👉 NEW: Clear payment breakdown for the guest! */}
             <div style={{ backgroundColor: '#f4f7f6', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'center' }}>
-              <p style={{ margin: '0 0 5px 0', fontSize: '1.1rem', color: '#555' }}><strong>Total Stay:</strong> ${fullTotal.toFixed(2)}</p>
-              <p style={{ margin: '0 0 5px 0', fontSize: '1.4rem', color: '#2d4a22' }}><strong>50% Deposit Due Now:</strong> ${depositAmount.toFixed(2)}</p>
+              {/* 👉 NEW: This banner updates based on which code they used! */}
+              {isDiscounted && <p style={{ color: '#2d4a22', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '10px' }}>{discountMessage}</p>}
+              
+              <p style={{ margin: '0 0 5px 0', fontSize: '1.1rem', color: '#555', textDecoration: isDiscounted ? 'line-through' : 'none' }}><strong>Total Stay:</strong> ${(baseRate * totalNights).toFixed(2)}</p>
+              {isDiscounted && <p style={{ margin: '0 0 5px 0', fontSize: '1.1rem', color: '#2d4a22' }}><strong>New Total Stay:</strong> ${fullTotal.toFixed(2)}</p>}
+              
+              <p style={{ margin: '10px 0 5px 0', fontSize: '1.4rem', color: '#2d4a22' }}><strong>50% Deposit Due Now:</strong> ${depositAmount.toFixed(2)}</p>
               <p style={{ margin: '0', fontSize: '0.9rem', color: '#777' }}><strong>Remaining Balance:</strong> ${remainingAmount.toFixed(2)} (Due 7 days before check-in)</p>
             </div>
 
@@ -465,14 +424,15 @@ function BookingPage() {
                   room: selectedRoom, 
                   checkIn, 
                   checkOut,
-                  nights: totalNights, 
+                  nights: totalNights,
+                  promoCode: finalPromoCode,
                   guest: { 
                     ...guestInfo,
                     guestCount: `${Number(guestInfo.adults) + Number(guestInfo.kids)}`,
-                    guestAges: `${guestInfo.adults} Adults, ${guestInfo.kids} Kids (Under 12)`
+                    guestAges: `${guestInfo.adults} Adults, ${guestInfo.kids} Kids`
                   } 
                 }}
-                onSuccess={handleBookingSuccess}
+                onSuccess={() => { setBookingStatus('success'); setShowPayment(false); setShowForm(false); }}
                 onBack={() => setShowPayment(false)}
               />
             </Elements>
@@ -483,14 +443,11 @@ function BookingPage() {
           <div style={{ textAlign: 'center', padding: '20px' }}>
             <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🎉</div>
             <h3 style={{ color: '#2d4a22', fontSize: '1.5rem' }}>Payment & Booking Confirmed!</h3>
-            <p style={{ color: '#555', fontSize: '1.1rem' }}>Thank you, {guestInfo.name}! Your reservation at Cleghorn Canyon is locked in.</p>
+            <p style={{ color: '#555', fontSize: '1.1rem' }}>Thank you, {guestInfo.name}! Your reservation is locked in.</p>
             <p style={{ color: '#777', fontSize: '0.9rem', fontStyle: 'italic' }}>We just emailed a receipt to {guestInfo.email}.</p>
-            <button onClick={() => { setShowForm(false); setShowPayment(false); setCheckIn(null); setCheckOut(null); setBookingStatus(''); }} style={{ marginTop: '20px', backgroundColor: '#2d4a22', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 'bold' }}>
-              Book Another Room
-            </button>
+            <button onClick={() => { setShowForm(false); setShowPayment(false); setCheckIn(null); setCheckOut(null); setBookingStatus(''); }} style={{ marginTop: '20px', backgroundColor: '#2d4a22', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 'bold' }}>Book Another Room</button>
           </div>
         )}
-
       </div>
     </div>
   );
