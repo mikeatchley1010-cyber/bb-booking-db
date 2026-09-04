@@ -79,7 +79,11 @@ function Home() {
           <div style={{ padding: '30px', flex: '1', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ fontSize: '1.6rem', color: '#2d4a22', marginBottom: '15px' }}>Meet Your Hosts</h3>
             <p style={{ color: '#666', lineHeight: '1.6', margin: 0 }}>
-              We are thrilled to welcome you to our home. Kim, Mike & Dianne. We love sharing our slice of heaven in the canyon and providing you with genuine hospitality, great food, and the best local tips.
+              Welcome to Our Bed & Breakfast
+Welcome to our cozy Bed & Breakfast in the beautiful Black Hills of South Dakota!
+We’re delighted to have you here and hope your stay is relaxing, comfortable, and filled with wonderful memories. Whether you’re exploring the Black Hills, enjoying the scenery, or simply taking some time to unwind, we’re happy to share our little corner of South Dakota with you.
+ Warmly,
+Mike, Kim & Dianne.
             </p>
           </div>
         </div>
