@@ -79,7 +79,7 @@ function Home() {
           <div style={{ padding: '30px', flex: '1', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ fontSize: '1.6rem', color: '#2d4a22', marginBottom: '15px' }}>Meet Your Hosts</h3>
             <p style={{ color: '#666', lineHeight: '1.6', margin: 0 }}>
-              We are thrilled to welcome you to our home. We love sharing our slice of heaven in the canyon and providing you with genuine hospitality, great food, and the best local tips.
+              We are thrilled to welcome you to our home. Kim AKA KA-KA, Dianne AKA Geka, Mike AKA Fodder. We love sharing our slice of heaven in the canyon and providing you with genuine hospitality, great food, and the best local tips.
             </p>
           </div>
         </div>
