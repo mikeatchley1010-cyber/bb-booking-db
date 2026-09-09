@@ -86,7 +86,6 @@ function BookingPage() {
   
   const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '', adults: '1', kids: '0', promoCode: '' });
   
-  // 👉 NEW: State for the policy checkbox
   const [policyAgreed, setPolicyAgreed] = useState(false);
   
   const [bookingStatus, setBookingStatus] = useState('');
@@ -231,7 +230,7 @@ function BookingPage() {
     setShowForm(false);
     setShowPayment(false);
     setBookingStatus('');
-    setPolicyAgreed(false); // Reset checkbox on room change
+    setPolicyAgreed(false); 
   };
 
   const displayPrettyDate = (dateString) => {
@@ -299,7 +298,17 @@ function BookingPage() {
       
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Check Availability</h1>
-        <p style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold' }}>* All reservations require a minimum 2-night stay.</p>
+        <p style={{ fontSize: '1.2rem', color: '#555', fontWeight: 'bold', margin: '0 0 15px 0' }}>* All reservations require a minimum 2-night stay.</p>
+        
+        {/* 👉 NEW: Check-in / Check-out Information Box */}
+        <div style={{ backgroundColor: '#e9ecef', padding: '15px 25px', borderRadius: '8px', display: 'inline-block', border: '1px solid #ccc' }}>
+          <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#2d4a22', fontSize: '1.1rem' }}>
+            🕒 Check-In: After 3:00 PM &nbsp;&nbsp;|&nbsp;&nbsp; 🕙 Check-Out: By 10:00 AM
+          </p>
+          <p style={{ margin: 0, fontSize: '0.95rem', color: '#555', fontStyle: 'italic' }}>
+            Message us for special accommodations for early check-in or late check-out.
+          </p>
+        </div>
       </div>
 
       {!showForm && !showPayment && bookingStatus !== 'success' && (
@@ -318,7 +327,6 @@ function BookingPage() {
 
       <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', maxWidth: '600px', margin: '0 auto' }}>
         
-        {/* Calendar Code (Hidden for brevity during form filling) */}
         {!showForm && !showPayment && bookingStatus !== 'success' && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -393,7 +401,7 @@ function BookingPage() {
                 <input type="text" name="promoCode" value={guestInfo.promoCode} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', boxSizing: 'border-box' }} placeholder="Enter code if you have one" />
               </div>
 
-              {/* 👉 NEW: Mandatory Policy Checkbox */}
+              {/* 👉 Policy Checkbox Updated with Check-In times */}
               <div style={{ backgroundColor: '#fff3cd', border: '1px solid #ffeeba', padding: '15px', borderRadius: '6px', marginTop: '10px' }}>
                 <label style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', cursor: 'pointer' }}>
                   <input 
@@ -404,7 +412,7 @@ function BookingPage() {
                     style={{ marginTop: '4px', width: '20px', height: '20px', cursor: 'pointer' }}
                   />
                   <span style={{ fontSize: '0.95rem', color: '#856404', lineHeight: '1.4' }}>
-                    <strong>Cancellation & Payment Policy:</strong> I understand I have 24 hours to cancel for a full refund. After 24 hours, the 50% deposit becomes non-refundable. The remaining total amount is due 7 days before check-in or the reservation will be canceled.
+                    <strong>Policies:</strong> Check-in is after 3:00 PM and check-out is by 10:00 AM. I have 24 hours to cancel for a full refund. After 24 hours, the 50% deposit becomes non-refundable. The remaining total amount is due 7 days before check-in or the reservation will be canceled.
                   </span>
                 </label>
               </div>
