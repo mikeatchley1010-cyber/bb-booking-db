@@ -10,14 +10,15 @@ function RoomsRates() {
       name: 'Ultimate Family Package (All Rooms)',
       rate: '$395 / night',
       description: 'Book the entire Bed & Breakfast for your ultimate private getaway. Enjoy exclusive access to all three rooms—Buffalo Ridge, BigHorn Lookout, and Deer Run—for your family or group.',
-      features: ['Three Bedrooms/Bathrooms','Free Hot Breakfast', 'Sleeps up to 6 Adults', 'Accommidates small children','Roll away; pack & play available', 'Ultimate Privacy', 'Free Wi-Fi & TV'],
+      features: ['Three Bedrooms/Bathrooms','Free Hot Breakfast', 'Sleeps up to 6 Adults', 'Accommodates small children','Roll away; pack & play available', 'Ultimate Privacy', 'Free Wi-Fi & TV'],
       images: ['/Buffalo2.JPG', '/Bighorn2-rm.jpeg']
-    },    {
+    },    
+    {
       id: 'combo-bd',
       name: 'Family Combo: BigHorn & Deer Run',
       rate: '$295 / night',
       description: 'Perfect for families with kids! These two rooms feature a convenient adjoining door, giving you the space and privacy of two separate rooms while keeping everyone safely connected.',
-      features: ['Two Bedrooms/Bathrooms','1 Queen Bed & 1 Double + trundel bed','Sleeps up to 4 Adults', 'Accommidates small children', 'Free Hot Breakfast', 'Adjoining Door','Free Wi-Fi & TV'],
+      features: ['Two Bedrooms/Bathrooms','1 Queen Bed & 1 Double + trundle bed','Sleeps up to 4 Adults', 'Accommodates small children', 'Free Hot Breakfast', 'Adjoining Door','Free Wi-Fi & TV'],
       images: ['/BigHornrm3.JPG', '/deerrun2.JPG']
     },
     {
@@ -32,7 +33,7 @@ function RoomsRates() {
       id: 'bighorn',
       name: 'BigHorn Lookout',
       rate: '$175 / night',
-      description: 'Spacious and bright, featuring a private balcony perfect for your morning Home rosted coffee while watching the sun rise over the canyon.',
+      description: 'Spacious and bright, featuring a private balcony perfect for your morning Home roasted coffee while watching the sun rise over the canyon.',
       features: ['Queen Size Bed', 'En-suite Bathroom', 'Private Balcony', 'Sitting Area', 'Free Hot Breakfast', 'Free Wi-Fi & TV'],
       images: ['/Bighorn2-rm.jpeg', '/Bighorn-bath.jpeg']
     },
@@ -41,7 +42,7 @@ function RoomsRates() {
       name: 'Deer Run',
       rate: '$150 / night',
       description: 'A peaceful, secluded room tucked away for ultimate privacy and relaxation after a long day of exploring the Black Hills.',
-      features: ['Double Size Bed & Trundel Bed', 'En-suite Bathroom', 'private access to Large back deck', 'Walk-in Shower', , 'Free Hot Breakfast','Free Wi-Fi & TV'],
+      features: ['Double Size Bed & Trundle Bed', 'En-suite Bathroom', 'Private access to large back deck', 'Walk-in Shower', 'Free Hot Breakfast','Free Wi-Fi & TV'],
       images: ['/Deerrun1-rm.jpeg', '/deerrunbath.JPG']
     }
   ];
@@ -51,9 +52,19 @@ function RoomsRates() {
       
       <div style={{ textAlign: 'center', marginBottom: '50px' }}>
         <h1 style={{ fontSize: '2.5rem', color: '#2d4a22', marginBottom: '15px' }}>Rooms, Rates & Packages</h1>
-        <p style={{ fontSize: '1.2rem', color: '#555', maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
+        <p style={{ fontSize: '1.2rem', color: '#555', maxWidth: '700px', margin: '0 auto', lineHeight: '1.6', marginBottom: '20px' }}>
           Experience the comfort and tranquility of Cleghorn Canyon. All reservations require a 2-night minimum stay.
         </p>
+
+        {/* 👉 NEW: Check-in / Check-out Information Box */}
+        <div style={{ backgroundColor: '#e9ecef', padding: '15px 25px', borderRadius: '8px', display: 'inline-block', border: '1px solid #ccc' }}>
+          <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#2d4a22', fontSize: '1.1rem' }}>
+            🕒 Check-In: After 3:00 PM &nbsp;&nbsp;|&nbsp;&nbsp; 🕙 Check-Out: By 10:00 AM
+          </p>
+          <p style={{ margin: 0, fontSize: '0.95rem', color: '#555', fontStyle: 'italic' }}>
+            Message us for special accommodations for early check-in or late check-out.
+          </p>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '50px' }}>
@@ -94,7 +105,6 @@ function RoomsRates() {
                 ))}
               </ul>
 
-              {/* 👉 This sends the room ID to the availability page calendar! */}
               <Link to={`/availability?room=${room.id}`} style={{ alignSelf: 'flex-start', backgroundColor: '#2d4a22', color: 'white', padding: '12px 25px', borderRadius: '4px', textDecoration: 'none', fontWeight: 'bold', fontSize: '1.1rem' }}>
                 Check Availability
               </Link>
